@@ -1,0 +1,1 @@
+# Telegram Bot Template made by Tishka17 and Latand with some changes made by myself 
