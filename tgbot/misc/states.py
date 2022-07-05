@@ -8,20 +8,24 @@ class Main(StatesGroup):
 
 
 class Buy(StatesGroup):
-    tags = State()
-    name = State()
+    title = State()
     description = State()
     price = State()
-    photo = State()
     contact = State()
+    photo = State()
+    tags = State()
+
+    preview = State()
+    done = State()
 
 
 class Sell(StatesGroup):
-    tags = State()
-    name = State()
+    title = State()
     description = State()
     price = State()
-    photo = State()
     contact = State()
+    photo = State()
+    tags = State()
 
+    preview = State()
     done = State()
