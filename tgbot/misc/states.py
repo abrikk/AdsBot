@@ -12,7 +12,6 @@ class Buy(StatesGroup):
     name = State()
     description = State()
     price = State()
-    negotiable = State()
     photo = State()
     contact = State()
 
@@ -22,6 +21,7 @@ class Sell(StatesGroup):
     name = State()
     description = State()
     price = State()
-    negotiable = State()
     photo = State()
     contact = State()
+
+    done = State()

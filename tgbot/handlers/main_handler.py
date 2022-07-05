@@ -22,12 +22,12 @@ main_dialog = Dialog(
             Start(
                 text=Const("Куплю"),
                 id="buy",
-                state=Buy.name
+                state=Buy.tags
             ),
             Start(
                 text=Const("Продам"),
                 id="sell",
-                state=Sell.name
+                state=Sell.tags
             )
         ),
         state=Main.main,
