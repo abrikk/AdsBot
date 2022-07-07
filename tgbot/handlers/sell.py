@@ -1,6 +1,7 @@
 import operator
 from typing import Union, Dict, Any
 
+import flag
 import phonenumbers
 from aiogram import types
 from aiogram.utils.markdown import hunderline, hbold, hcode, hitalic
@@ -8,10 +9,12 @@ from aiogram_dialog import Dialog, Window, DialogManager, StartMode, ShowMode
 from aiogram_dialog.manager.protocols import ManagedDialogAdapterProto
 from aiogram_dialog.widgets.input import TextInput, MessageInput
 from aiogram_dialog.widgets.kbd import Group, Row, Button, SwitchTo, \
-    Start, Checkbox, Radio
+    Start, Checkbox, Radio, Select
+from aiogram_dialog.widgets.managed import ManagedWidgetAdapter
 from aiogram_dialog.widgets.text import Format, Const
 from aiogram_dialog.widgets.when import Whenable
 
+from tgbot.misc.media_widget import DynamicMediaFileId
 from tgbot.misc.states import Sell, Main
 
 
@@ -35,6 +38,8 @@ def make_tags(tag: str, where: str) -> str:
     }
     if tag:
         return f"{tags.get(where)}, {tags.get('extra')}"
+    elif where == 'preview' and tag is None:
+        return f"{tags.get('sell')}, дополнительный тег не указан ⚠️"
     else:
         return tags.get(where)
 
@@ -43,7 +48,8 @@ def humanize_phone_number(phone_number: str):
     if not phone_number.startswith('+'):
         phone_number = '+' + phone_number
     phone_number = phonenumbers.parse(phone_number)
-    return phonenumbers.format_number(phone_number, phonenumbers.PhoneNumberFormat.INTERNATIONAL)
+    emoji = ' ' + flag.flag(f"{phonenumbers.region_code_for_country_code(phone_number.country_code)}")
+    return phonenumbers.format_number(phone_number, phonenumbers.PhoneNumberFormat.INTERNATIONAL) + emoji
 
 
 async def get_sell_text(dialog_manager: DialogManager, **_kwargs):
@@ -54,10 +60,17 @@ async def get_sell_text(dialog_manager: DialogManager, **_kwargs):
     # entered data from user
     title: str = data.get('title') or '➖'
     description: str = data.get('description') or '➖'
+
     price = (data.get('price') and ((float(data.get('price')).is_integer() and int(data.get('price'))) or float(data.get('price')))) or '➖'
     currency = data.get('currency', '₴')
     negotiable = '(торг уместен)' if data.get('negotiable') else '(цена окончательна)'
-    contact = data.get('contact') and humanize_phone_number(data.get('contact')) or '➖'
+
+    if not data.get('is_typing', False):
+        contact = (data.get('contact') and humanize_phone_number(data.get('contact'))) or '➖'
+    else:
+        contact = data.get('contact')
+        data['is_typing'] = True
+
     photo = data.get('photos_file_id') and str(len(
         data.get('photos_file_id')
     )) + ' шт' or '➖'
@@ -109,11 +122,11 @@ async def get_sell_text(dialog_manager: DialogManager, **_kwargs):
         case 'contact':
             if not data.get('contact'):
                 text = '📞 Введите номер телефона который будет отображаться в объявлении' \
-                       ' или нажмите на кнопку ' \
-                       '\"Отправить контакт\":\n\n' + text
+                       ' вручную или с помощью кнопок:\n\n' + text
             else:
                 text = '📞 Чтобы изменить номер телефона, просто отправьте' \
-                       'отправьте новый номер.\n\n' + text
+                       'отправьте новый номер или очистите с помощью кнопок и ' \
+                       'введите новую.\n\n' + text
 
         case 'photo':
             if not data.get('quantity'):
@@ -136,8 +149,82 @@ async def get_sell_text(dialog_manager: DialogManager, **_kwargs):
     return {"sell_text": text, "page": get_active_section(state)}
 
 
+async def get_preview_text(dialog_manager: DialogManager, **_kwargs):
+    widget_data = dialog_manager.current_context().widget_data
+
+    tags: str = make_tags(widget_data.get('tag'), where='preview')
+    title: str = widget_data.get('title', 'Заголовок: не указан ⚠️')
+    description: str = widget_data.get('description', 'Описание: не указано ⚠️')
+    price: str = widget_data.get('price', 'Цена: не указана ⚠️')
+    contact: str = widget_data.get('contact', 'Контакт: не указан ⚠️')
+    photo = 'Фото: ' + ((widget_data.get('photo', '') and str(len(widget_data.get('photo', ''))) + ' шт') or 'не указано ⚠️')
+
+    photos_id: list = widget_data.get('photos_file_id', [])
+
+    print(photos_id)
+
+    if photos_id:
+        current_page = widget_data.setdefault('current_page', 1)
+        print(current_page)
+    else:
+        current_page = None
+
+    if len(photos_id) > 1:
+        widget_data['photos_len'] = len(photos_id)
+
+    text = (f"{tags}\n\n"
+            f"{title}\n\n"
+            f"{description}\n\n"
+            f"{price}\n\n"
+            f"{contact}\n\n"
+            f"{photo}\n\n")
+
+    return {"preview_text": text, "file_id": get_current_index(photos_id, current_page),
+            "show_scroll": len(photos_id) > 1,
+            "photo_text": len(photos_id) > 1 and current_page and f"{current_page}/{len(photos_id)}"}
+
+
+def get_current_index(photos: list[str] = None, page: int | None = None) -> None | str:
+    if not all([photos, page]):
+        return None
+    else:
+        return photos[page-1]
+
+
+async def change_photo(_call: types.CallbackQuery, button: Button, manager: DialogManager):
+    widget_data = manager.current_context().widget_data
+    current_page: int = widget_data.get('current_page')
+    photos_len: int = widget_data.get('photos_len')
+
+    action: str = button.widget_id
+
+    if action == 'left_photo':
+        current_page -= 1
+        if current_page < 1:
+            current_page = photos_len
+    elif action == 'right_photo':
+        current_page += 1
+        if current_page > photos_len:
+            current_page = 1
+
+    widget_data['current_page'] = current_page
+
+
 async def change_page(_obj: Union[types.CallbackQuery, types.Message], button: Union[Button, TextInput],
                       manager: DialogManager, *_text):
+
+    widget_data = manager.current_context().widget_data
+    print(widget_data)
+
+    if widget_data.get('is_typing', False):
+        try:
+            validate_phone_number(widget_data.get('contact'))
+        except ValueError:
+            widget_data.pop("contact", '')
+            widget_data['is_typing'] = False
+    else:
+        widget_data['is_typing'] = False
+
     action: str = button.widget_id
     current_state = manager.current_context().state.state.split(":")[-1]
 
@@ -174,7 +261,7 @@ async def add_tag(_call: types.CallbackQuery, button: Button, manager: DialogMan
     manager.current_context().widget_data['tag'] = tags.get(tag)
 
 
-async def currency_selected(call: types.CallbackQuery, widget: Any, manager: DialogManager, item_id: str):
+async def currency_selected(_call: types.CallbackQuery, _widget: Any, manager: DialogManager, item_id: str):
     currencies = {'USD': '$', 'EUR': '€', 'RUB': '₽', 'UAH': '₴'}
     manager.current_context().widget_data['currency'] = currencies[item_id]
 
@@ -189,6 +276,43 @@ def tag_is_empty(_data: Dict, _widget: Whenable, manager: DialogManager):
 
 def tag_exist(_data: Dict, _widget: Whenable, manager: DialogManager):
     return manager.current_context().widget_data.get('tag') is not None
+
+
+async def on_clear(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
+    widget_data = manager.current_context().widget_data
+    widget_data.pop("contact", None)
+    widget_data["is_typing"] = False
+
+
+async def on_backspace(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
+    widget_data = manager.current_context().widget_data
+    widget_data["is_typing"] = True
+    widget_data["contact"] = widget_data.get("contact", "")[:-1]
+
+
+async def on_select(_call: types.CallbackQuery, _select: ManagedWidgetAdapter[Select], manager: DialogManager, data):
+    widget_data = manager.current_context().widget_data
+    widget_data["is_typing"] = True
+    widget_data["contact"] = widget_data.get("contact", "") + data
+
+
+async def save_phone_number(call: types.CallbackQuery, _button: Button, manager: DialogManager):
+    widget_data = manager.current_context().widget_data
+    number = widget_data.get("contact")
+
+    if not number:
+        widget_data["is_typing"] = True
+        await call.answer("Вы не указали номер телефона!")
+    else:
+        try:
+            validate_phone_number(number)
+            formatted_number = number
+            manager.current_context().widget_data['contact'] = formatted_number
+            await call.answer("Сохранено!")
+            widget_data.pop("is_typing", None)
+        except ValueError:
+            widget_data["is_typing"] = True
+            await call.answer("Вы указали не валидный номер телефона!")
 
 
 # Restrictions
@@ -299,7 +423,7 @@ def get_widgets():
         Row(
             Start(text=Const("🔚 Назад"), id="back_to_main", state=Main.main,
                   mode=StartMode.RESET_STACK),
-            SwitchTo(text=Const("👁 Предпросмотр"), id="preview", state=Sell.preview),
+            SwitchTo(text=Const("👁"), id="preview", state=Sell.preview),
             SwitchTo(text=Const("Готово"), id="done", state=Sell.done)
         )
     )
@@ -353,6 +477,19 @@ sell_dialog = Dialog(
         getter=[get_sell_text, get_currency_data]
     ),
     Window(
+        Row(
+            Button(Const("<<"), id="bsp", on_click=on_backspace),
+            Button(Const("Clear"), id="clear", on_click=on_clear),
+        ),
+        Group(
+            Select(
+                Format("{item}"), id="s_contact", on_click=on_select,
+                items=[1, 2, 3, 4, 5, 6, 7, 8, 9, '+', 0],
+                item_id_getter=str
+            ),
+            Button(text=Const("Сохранить"), id="save_number", on_click=save_phone_number),
+            width=3
+        ),
         *get_widgets(),
         TextInput(
             id="contact",
@@ -382,7 +519,19 @@ sell_dialog = Dialog(
         getter=[get_sell_text]
     ),
     Window(
-
+        Row(
+            Button(Const("<<"), id="left_photo", on_click=change_photo),
+            Button(Format(text="{photo_text}", when="photo_text"), id="photo_pos"),
+            Button(Const(">>"), id="right_photo", on_click=change_photo),
+            when="show_scroll"
+        ),
+        DynamicMediaFileId(file_id=Format(text='{file_id}'), when="file_id"),
+        Format(text="{preview_text}", when="preview_text"),
+        SwitchTo(text=Const("Назад"), id="back", state=Sell.title),
+        state=Sell.preview,
+        getter=[get_preview_text]
+    ),
+    Window(
         state=Sell.done,
         getter=[get_sell_text]
     ),
