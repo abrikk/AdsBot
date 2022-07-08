@@ -9,13 +9,14 @@ from aiogram_dialog import Dialog, Window, DialogManager, StartMode, ShowMode
 from aiogram_dialog.manager.protocols import ManagedDialogAdapterProto
 from aiogram_dialog.widgets.input import TextInput, MessageInput
 from aiogram_dialog.widgets.kbd import Group, Row, Button, SwitchTo, \
-    Start, Checkbox, Radio, Select
-from aiogram_dialog.widgets.managed import ManagedWidgetAdapter
+    Start, Checkbox, Radio
 from aiogram_dialog.widgets.text import Format, Const
 from aiogram_dialog.widgets.when import Whenable
 
 from tgbot.misc.media_widget import DynamicMediaFileId
 from tgbot.misc.states import Sell, Main
+
+REQUIRED_FIELDS = {"description", "price", "contact", "tag"}
 
 
 def get_active_section(state: str):
@@ -54,7 +55,11 @@ def humanize_phone_number(phone_number: str):
 
 async def get_sell_text(dialog_manager: DialogManager, **_kwargs):
     data = dialog_manager.current_context().widget_data
-    print(data)
+    print(1, data)
+    print(2, data.get("price"))
+    print(5, type(data.get("price")))
+    # print(3, dialog_manager.dialog().find("price").get_value())
+    # print(4, type(dialog_manager.dialog().find("price").get_value()))
     state = dialog_manager.current_context().state.state.split(":")[-1]
 
     # entered data from user
@@ -64,16 +69,12 @@ async def get_sell_text(dialog_manager: DialogManager, **_kwargs):
     price = (data.get('price') and ((float(data.get('price')).is_integer() and int(data.get('price'))) or float(data.get('price')))) or '➖'
     currency = data.get('currency', '₴')
     negotiable = '(торг уместен)' if data.get('negotiable') else '(цена окончательна)'
-
-    if not data.get('is_typing', False):
-        contact = (data.get('contact') and humanize_phone_number(data.get('contact'))) or '➖'
-    else:
-        contact = data.get('contact')
-        data['is_typing'] = True
+    contact = (data.get('contact') and humanize_phone_number(data.get('contact'))) or '➖'
 
     photo = data.get('photos_file_id') and str(len(
         data.get('photos_file_id')
     )) + ' шт' or '➖'
+
     tags: str = make_tags(tag=data.get('tag'), where="sell")
 
     # identifying the active section
@@ -129,7 +130,7 @@ async def get_sell_text(dialog_manager: DialogManager, **_kwargs):
                        'введите новую.\n\n' + text
 
         case 'photo':
-            if not data.get('quantity'):
+            if not data.get('photos_file_id'):
                 text = '🖼 Отправьте картинки товара или услуг по одному ' \
                        '(этот раздел можно пропустить).\n' \
                        'P.s. Максимальное количество картинок: <code>5</code>:\n\n' + text
@@ -153,13 +154,12 @@ async def get_preview_text(dialog_manager: DialogManager, **_kwargs):
     widget_data = dialog_manager.current_context().widget_data
 
     tags: str = make_tags(widget_data.get('tag'), where='preview')
-    title: str = widget_data.get('title', 'Заголовок: не указан ⚠️')
-    description: str = widget_data.get('description', 'Описание: не указано ⚠️')
-    price: str = widget_data.get('price', 'Цена: не указана ⚠️')
-    contact: str = widget_data.get('contact', 'Контакт: не указан ⚠️')
-    photo = 'Фото: ' + ((widget_data.get('photo', '') and str(len(widget_data.get('photo', ''))) + ' шт') or 'не указано ⚠️')
-
+    title: str = "Название: " + (widget_data.get('title', 'не указан ⚠️'))
+    description: str = "Описание: " + (widget_data.get('description', 'не указано ⚠️'))
+    price: str = "Цена: " + (widget_data.get('price', 'не указана ⚠️'))
+    contact: str = "Контакты " + (widget_data.get('contact', 'не указан ⚠️'))
     photos_id: list = widget_data.get('photos_file_id', [])
+    photo = 'Фото: ' + ((photos_id and str(len(photos_id)) + ' шт') or 'не указано ⚠️')
 
     print(photos_id)
 
@@ -182,6 +182,18 @@ async def get_preview_text(dialog_manager: DialogManager, **_kwargs):
     return {"preview_text": text, "file_id": get_current_index(photos_id, current_page),
             "show_scroll": len(photos_id) > 1,
             "photo_text": len(photos_id) > 1 and current_page and f"{current_page}/{len(photos_id)}"}
+
+
+async def get_confirm_text(dialog_manager: DialogManager, **_kwargs):
+    widget_data = dialog_manager.current_context().widget_data
+
+    tags: str = make_tags(widget_data.get('tag'), where='confirm')
+    title: str = "Название: " + (widget_data.get('title', 'не указан ⚠️'))
+    description: str = "Описание: " + (widget_data.get('description', 'не указано ⚠️'))
+    price: str = "Цена: " + (widget_data.get('price', 'не указана ⚠️'))
+    contact: str = "Контакты " + (widget_data.get('contact', 'не указан ⚠️'))
+    photos_id: list = widget_data.get('photos_file_id', [])
+    photo = 'Фото: ' + ((photos_id and str(len(photos_id)) + ' шт') or 'не указано ⚠️')
 
 
 def get_current_index(photos: list[str] = None, page: int | None = None) -> None | str:
@@ -212,19 +224,6 @@ async def change_photo(_call: types.CallbackQuery, button: Button, manager: Dial
 
 async def change_page(_obj: Union[types.CallbackQuery, types.Message], button: Union[Button, TextInput],
                       manager: DialogManager, *_text):
-
-    widget_data = manager.current_context().widget_data
-    print(widget_data)
-
-    if widget_data.get('is_typing', False):
-        try:
-            validate_phone_number(widget_data.get('contact'))
-        except ValueError:
-            widget_data.pop("contact", '')
-            widget_data['is_typing'] = False
-    else:
-        widget_data['is_typing'] = False
-
     action: str = button.widget_id
     current_state = manager.current_context().state.state.split(":")[-1]
 
@@ -278,43 +277,6 @@ def tag_exist(_data: Dict, _widget: Whenable, manager: DialogManager):
     return manager.current_context().widget_data.get('tag') is not None
 
 
-async def on_clear(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
-    widget_data = manager.current_context().widget_data
-    widget_data.pop("contact", None)
-    widget_data["is_typing"] = False
-
-
-async def on_backspace(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
-    widget_data = manager.current_context().widget_data
-    widget_data["is_typing"] = True
-    widget_data["contact"] = widget_data.get("contact", "")[:-1]
-
-
-async def on_select(_call: types.CallbackQuery, _select: ManagedWidgetAdapter[Select], manager: DialogManager, data):
-    widget_data = manager.current_context().widget_data
-    widget_data["is_typing"] = True
-    widget_data["contact"] = widget_data.get("contact", "") + data
-
-
-async def save_phone_number(call: types.CallbackQuery, _button: Button, manager: DialogManager):
-    widget_data = manager.current_context().widget_data
-    number = widget_data.get("contact")
-
-    if not number:
-        widget_data["is_typing"] = True
-        await call.answer("Вы не указали номер телефона!")
-    else:
-        try:
-            validate_phone_number(number)
-            formatted_number = number
-            manager.current_context().widget_data['contact'] = formatted_number
-            await call.answer("Сохранено!")
-            widget_data.pop("is_typing", None)
-        except ValueError:
-            widget_data["is_typing"] = True
-            await call.answer("Вы указали не валидный номер телефона!")
-
-
 # Restrictions
 def fixed_size_64(text: str):
     if len(text) > 128:
@@ -323,13 +285,6 @@ def fixed_size_64(text: str):
 
 def fixed_size_1024(text: str):
     if len(text) > 1024:
-        raise ValueError
-
-
-def positive_float(number: str):
-    # min price is 0.01
-    number = float(number)
-    if not (number > 0.01):
         raise ValueError
 
 
@@ -362,10 +317,22 @@ async def invalid_input(message: types.Message, _widget: TextInput, manager: Dia
         case Sell.description:
             await message.answer("Максимальная длина описания товара или услуг 128 символов."
                                  " Попробуйте еще раз.")
-        case Sell.price:
-            await message.answer("Цена должна быть числом и быть больше 0.01. Попробуйте еще раз.")
         case Sell.contact:
             await message.answer("Вы ввели не валидный номер! Попробуйте еще раз.")
+
+
+async def price_validator(message: types.Message, dialog: ManagedDialogAdapterProto, manager: DialogManager):
+    try:
+        price: float = (float(message.text).is_integer() and int(message.text)) or round(float(message.text), 2)
+
+        if not (price > 0.01):
+            raise ValueError
+
+        manager.current_context().widget_data["price"] = price
+        await dialog.next()
+    except ValueError:
+        manager.show_mode = ShowMode.EDIT
+        await message.answer("Цена должна быть числом и быть больше 0.01. Попробуйте еще раз.")
 
 
 async def pic_validator(message: types.Message, _dialog: ManagedDialogAdapterProto, manager: DialogManager):
@@ -380,7 +347,8 @@ async def pic_validator(message: types.Message, _dialog: ManagedDialogAdapterPro
 
 # Buttons and dialogs
 async def set_default(_, dialog_manager: DialogManager):
-    await dialog_manager.dialog().find('r_currency').set_checked(event="", item_id="UAH")
+    await dialog_manager.dialog().find('currency_code').set_checked(event="", item_id="UAH")
+    dialog_manager.current_context().widget_data['currency'] = "₴"
 
 
 async def get_currency_data(**_kwargs):
@@ -461,35 +429,20 @@ sell_dialog = Dialog(
         Radio(
             checked_text=Format("✔️ {item[0]}"),
             unchecked_text=Format("{item[0]}"),
-            id="r_currency",
+            id="currency_code",
             item_id_getter=operator.itemgetter(1),
             items="currencies",
             on_click=currency_selected
         ),
         *get_widgets(),
-        TextInput(
-            id="price",
-            type_factory=positive_float,
-            on_error=invalid_input,
-            on_success=change_page
+        MessageInput(
+            func=price_validator,
+            content_types=types.ContentType.TEXT
         ),
         state=Sell.price,
         getter=[get_sell_text, get_currency_data]
     ),
     Window(
-        Row(
-            Button(Const("<<"), id="bsp", on_click=on_backspace),
-            Button(Const("Clear"), id="clear", on_click=on_clear),
-        ),
-        Group(
-            Select(
-                Format("{item}"), id="s_contact", on_click=on_select,
-                items=[1, 2, 3, 4, 5, 6, 7, 8, 9, '+', 0],
-                item_id_getter=str
-            ),
-            Button(text=Const("Сохранить"), id="save_number", on_click=save_phone_number),
-            width=3
-        ),
         *get_widgets(),
         TextInput(
             id="contact",
@@ -531,9 +484,19 @@ sell_dialog = Dialog(
         state=Sell.preview,
         getter=[get_preview_text]
     ),
-    Window(
-        state=Sell.done,
-        getter=[get_sell_text]
-    ),
+    # Window(
+    #     Format(text="{confirm_text}", when="confirm_text"),
+    #     Button(
+    #         text=Const("✅ Да"),
+    #         id="yes",
+    #         on_click=on_confirm
+    #     ),
+    #     Row(
+    #       SwitchTo(text=Const("Назад"), id="back", state=Sell.title),
+    #       Start(text=Const("В главное меню"), id="back", state=Main.main, mode=StartMode.RESET_STACK),
+    #     ),
+    #     state=Sell.confirm,
+    #     getter=[get_confirm_text]
+    # ),
     on_start=set_default
 )

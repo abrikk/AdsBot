@@ -1,5 +1,5 @@
 from aiogram_dialog import Dialog, Window, DialogManager
-from aiogram_dialog.widgets.kbd import Row, SwitchTo, Start
+from aiogram_dialog.widgets.kbd import Row, Start
 from aiogram_dialog.widgets.text import Format, Const
 
 from tgbot.misc.states import Main, Buy, Sell

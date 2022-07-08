@@ -16,6 +16,7 @@ class Buy(StatesGroup):
     tags = State()
 
     preview = State()
+    confirm = State()
     done = State()
 
 
@@ -28,4 +29,5 @@ class Sell(StatesGroup):
     tags = State()
 
     preview = State()
+    confirm = State()
     done = State()
