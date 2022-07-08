@@ -1,75 +1,94 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from typing import Optional
 
 import flag
 import phonenumbers
-from aiogram.utils.markdown import hunderline, hbold, hitalic
+from aiogram.utils.markdown import hunderline, hbold, hitalic, hcode
 
 
 @dataclass
-class Ad:
-    state: str
+class Ad(ABC):
+    state: Optional[str] = None
     tags: list[str] = field(default_factory=list)
-    title: str = field(default_factory=str)
     description: str = field(default_factory=str)
     price: float | int = field(default_factory=float)
     contacts: list[str] = field(default_factory=list)
+    title: str = field(default_factory=str)
     photos_ids: list[str] = field(default_factory=list)
 
+    @abstractmethod
     def to_text(self):
-        raise NotImplementedError("Can't instantiate an abstract method.")
+        pass
 
+    @abstractmethod
     def current_heading(self) -> str:
-        raise NotImplementedError("Can't instantiate an abstract method.")
+        pass
 
-    @staticmethod
-    def humanize_phone_numbers(phone_numbers: list[str]) -> str:
+    @abstractmethod
+    def preview(self) -> str:
+        pass
+
+    @abstractmethod
+    def confirm(self) -> str:
+        pass
+
+    def humanize_phone_numbers(self) -> str:
         list_of_numbers: list[str] = list()
-        for number in phone_numbers:
+        for number in self.contacts:
             if not number.startswith('+'):
                 number = '+' + number
             number = phonenumbers.parse(number)
             emoji = ' ' + flag.flag(f"{phonenumbers.region_code_for_country_code(number.country_code)}")
-            list_of_numbers.append(phonenumbers.format_number(number, phonenumbers.PhoneNumberFormat.INTERNATIONAL) + emoji)
+            list_of_numbers.append(
+                hcode(phonenumbers.format_number(number, phonenumbers.PhoneNumberFormat.INTERNATIONAL)) + emoji)
 
         return ", ".join(list_of_numbers)
 
+    def make_tags(self):
+        return ", ".join(["#" + tag for tag in self.tags])
 
+
+@dataclass
 class SalesAd(Ad):
     currency: str = "₴"
     negotiable: bool = False
 
     def to_text(self) -> str:
-        title: str = self.title or '➖'
         description: str = self.description or '➖'
         price: float | int | str = self.price or '➖'
         negotiable: str = '(торг уместен)' if self.negotiable else '(цена окончательна)'
-        contacts: str = self.contacts and self.humanize_phone_number(self.contacts) or '➖'
+        contacts: str = self.contacts and self.humanize_phone_numbers() or '➖'
 
+        title: str = self.title or '➖'
         photos_len: str = self.photos_ids and str(len(self.photos_ids)) + ' шт' or '➖'
 
-        ttitle = self.state == 'title' and hunderline('Заголовок товара или услуг') or 'Заголовок товара или услуг'
-        tdescription = self.state == 'description' and hunderline('Описание товара или услуг') or 'Описание товара или услуг'
+        ttags = self.state == 'tags' and hunderline('Теги') or 'Теги'
+        tdescription = self.state == 'description' and hunderline(
+            'Описание товара или услуг') or 'Описание товара или услуг'
         tprice = self.state == 'price' and hunderline('Цена') or 'Цена'
         tcontact = self.state == 'contact' and hunderline('Контактные данные') or 'Контактные данные'
+        ttitle = self.state == 'title' and hunderline('Заголовок товара или услуг (опционально)') \
+                 or 'Заголовок товара или услуг (опционально)'
         tphoto = self.state == 'photo' and hunderline('Фото (опционально)') or 'Фото (опционально)'
-        ttags = self.state == 'tags' and hunderline('Теги') or 'Теги'
 
-        (f"1. {ttitle}: {hbold(title)}\n"
-         f"2. {tdescription}: {hitalic(description)}\n"
-         f"3. {tprice}: {hcode(str(price) + ' ' + (data.get('price') and currency or ''))} {data.get('price') and negotiable or ''}\n"
-         f"4. {tcontact}: {hcode(contact)}\n"
-         f"5. {tphoto}: {photo}\n"
-         f"6. {ttags}: {tags}\n")
-
+        return (self.current_heading() +
+                f"1. {ttags}: {self.make_tags()}\n"
+                f"2. {tdescription}: {hitalic(description)}\n"
+                f"3. {tprice}: {hcode(str(price) + ' ' + (self.price and self.currency or ''))} {self.price and negotiable or ''}\n"
+                f"4. {tcontact}: {contacts}\n"
+                f"5. {ttitle}: {hbold(title)}\n"
+                f"6. {tphoto}: {photos_len}\n")
 
     def current_heading(self) -> str:
         match self.state:
-            case 'title':
-                if not self.title:
-                    return '🔡 Введите заголовок товара или услуг (этот раздел можно пропустить):\n\n'
+            case "tags":
+                if not self.tags:
+                    return '#️⃣  Выберите тег своего товара или услуг нажав по кнопке ' \
+                           'ниже:\n\n'
                 else:
-                    return '🔡 Чтобы изменить заголовок товара или услуг, просто отправьте' \
-                           'новое название.\n\n'
+                    return '#️⃣  Чтобы изменить тег товара или услуг, сначала удалите текущий ' \
+                           'тег, затем установите новый.\n\n'
 
             case 'description':
                 if not self.description:
@@ -93,7 +112,14 @@ class SalesAd(Ad):
                     return '📞 Чтобы изменить номер телефона, просто отправьте' \
                            'отправьте новый номер.\n\n'
 
-            case 'photo':
+            case 'title':
+                if not self.title:
+                    return '🔡 Введите заголовок товара или услуг (этот раздел можно пропустить):\n\n'
+                else:
+                    return '🔡 Чтобы изменить заголовок товара или услуг, просто отправьте' \
+                           'новое название.\n\n'
+
+            case _:
                 if not self.photos_ids:
                     return '🖼 Отправьте картинки товара или услуг по одному ' \
                            '(этот раздел можно пропустить).\n' \
@@ -103,13 +129,74 @@ class SalesAd(Ad):
                            'новую картинку, а чтобы удалить картинку нажми на ' \
                            'кнопку ниже.\n\n'
 
-            case _:
-                if not self.tags:
-                    return '#️⃣  Выберите тег своего товара или услуг нажав по кнопке ' \
-                           'ниже:\n\n'
-                else:
-                    return '#️⃣  Чтобы изменить тег товара или услуг, сначала удалите текущий ' \
-                           'тег, затем установите новый.\n\n'
+    def preview(self) -> str:
+        preview_list: list[str] = []
+        negotiable: str = '(торг уместен)' if self.negotiable else '(цена окончательна)'
+
+        if self.tags:
+            preview_list.append(self.make_tags())
+        else:
+            preview_list.append('Теги не указаны ❗️')
+
+        if self.title:
+            preview_list.append(f"Продается {hbold(self.title)}")
+
+        if self.description:
+            preview_list.append(f"{hitalic(self.description)}")
+        else:
+            preview_list.append("Описание отсутствует ❗️")
+
+        if self.price:
+            preview_list.append(f"{hcode(str(self.price) + ' ' + (self.price and self.currency or ''))} "
+                                f"{self.price and negotiable or ''}")
+        else:
+            preview_list.append("Цена не указана ❗️")
+
+        if self.contacts:
+            preview_list.append(f"Контактные данные: {self.humanize_phone_numbers()}")
+        else:
+            preview_list.append("Контактные данные не указаны ❗️")
+
+        if self.photos_ids:
+            preview_list.append(f"Картинки: {len(self.photos_ids)} шт")
+
+        return '\n\n'.join(preview_list)
+
+    def confirm(self) -> str:
+        negotiable: str = '(торг уместен)' if self.negotiable else '(цена окончательна)'
+
+        confirm_list: list[str] = [
+            "Вы уверены что хотите опубликовать пост об объявлении"
+            " со следующими данными?",
+            f"Теги: {self.make_tags()}",
+            f"Описание: {hitalic(self.description)}",
+            f"Цена: {hcode(str(self.price) + ' ' + (self.price and self.currency or ''))} "
+            f"{self.price and negotiable or ''}",
+            f"Контактные данные: {self.humanize_phone_numbers()}",
+        ]
+
+        if self.title:
+            confirm_list.append(f"Заголовок: {hbold(self.title)}")
+        if self.photos_ids:
+            confirm_list.append(f"Картинки: {len(self.photos_ids)} шт")
+
+        return '\n\n'.join(confirm_list)
+
+    def post(self) -> str:
+        negotiable: str = '(торг уместен)' if self.negotiable else '(цена окончательна)'
+
+        post_list: list[str] = [
+            self.make_tags()
+        ]
+
+        if self.title:
+            post_list.append(f"Продается {hbold(self.title)}")
+
+        post_list.append(f"{hitalic(self.description)}")
+        post_list.append(f"{hcode(str(self.price) + ' ' + self.currency + negotiable)}")
+        post_list.append(f"Контактные данные: {self.humanize_phone_numbers()}")
+
+        return '\n\n'.join(post_list)
 
 
 class PurchaseAd(Ad):
@@ -119,3 +206,8 @@ class PurchaseAd(Ad):
     def current_heading(self) -> str:
         pass
 
+    def preview(self) -> str:
+        pass
+
+    def confirm(self) -> str:
+        pass

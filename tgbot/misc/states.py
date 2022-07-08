@@ -8,12 +8,13 @@ class Main(StatesGroup):
 
 
 class Buy(StatesGroup):
-    title = State()
+    tags = State()
     description = State()
     price = State()
     contact = State()
+
+    title = State()
     photo = State()
-    tags = State()
 
     preview = State()
     confirm = State()
@@ -21,12 +22,13 @@ class Buy(StatesGroup):
 
 
 class Sell(StatesGroup):
-    title = State()
+    tags = State()
     description = State()
     price = State()
     contact = State()
+
+    title = State()
     photo = State()
-    tags = State()
 
     preview = State()
     confirm = State()
