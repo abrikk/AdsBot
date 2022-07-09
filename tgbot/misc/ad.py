@@ -17,6 +17,9 @@ class Ad(ABC):
     title: str = field(default_factory=str)
     photos_ids: list[str] = field(default_factory=list)
 
+    currency: str = "₴"
+    mention: str = field(default_factory=str)
+
     @abstractmethod
     def to_text(self):
         pass
@@ -45,13 +48,12 @@ class Ad(ABC):
 
         return ", ".join(list_of_numbers)
 
-    def make_tags(self):
+    def make_tags(self) -> str:
         return ", ".join(["#" + tag for tag in self.tags])
 
 
 @dataclass
 class SalesAd(Ad):
-    currency: str = "₴"
     negotiable: bool = False
 
     def to_text(self) -> str:
@@ -195,16 +197,85 @@ class SalesAd(Ad):
         post_list.append(f"{hitalic(self.description)}")
         post_list.append(f"{hcode(str(self.price) + ' ' + self.currency + negotiable)}")
         post_list.append(f"Контактные данные: {self.humanize_phone_numbers()}")
-
+        post_list.append(f"Телеграм: {self.mention}")
         return '\n\n'.join(post_list)
 
 
 class PurchaseAd(Ad):
     def to_text(self) -> str:
-        pass
+        description: str = self.description or '➖'
+        contacts: str = self.contacts and self.humanize_phone_numbers() or '➖'
+        price: float | int | str = self.price or '➖'
+        title: str = self.title or '➖'
+        photos_len: str = self.photos_ids and str(len(self.photos_ids)) + ' шт' or '➖'
+
+        ttags = self.state == 'tags' and hunderline('Теги') or 'Теги'
+        tdescription = self.state == 'description' and hunderline(
+            'Описание товара или услуг') or 'Описание товара или услуг'
+        tcontact = self.state == 'contact' and hunderline('Контактные данные') or 'Контактные данные'
+        tprice = self.state == 'price' and hunderline('Цена') or 'Желаемая цена (опционально)'
+        ttitle = self.state == 'title' and hunderline('Заголовок товара или услуг (опционально)') \
+                 or 'Заголовок товара или услуг (опционально)'
+        tphoto = self.state == 'photo' and hunderline('Фото (опционально)') or 'Фото (опционально)'
+
+        return (self.current_heading() +
+                f"1. {ttags}: {self.make_tags()}\n"
+                f"2. {tdescription}: {hitalic(description)}\n"
+                f"3. {tcontact}: {contacts}\n"
+                f"4. {tprice}: {hcode(str(price) + ' ' + (self.price and self.currency or ''))}\n"
+                f"5. {ttitle}: {hbold(title)}\n"
+                f"6. {tphoto}: {photos_len}\n")
 
     def current_heading(self) -> str:
-        pass
+        match self.state:
+            case "tags":
+                if not self.tags:
+                    return '#️⃣  Выберите тег товара или услуг который вы хотите ' \
+                           'купить нажав по кнопке ниже:\n\n'
+                else:
+                    return '#️⃣  Чтобы изменить тег, сначала удалите текущий ' \
+                           'тег, затем установите новый.\n\n'
+
+            case 'description':
+                if not self.description:
+                    return '📝 Введите описание товара или услуг которое ' \
+                           'вы хотите купить:\n\n'
+                else:
+                    return '📝 Чтобы изменить описание, просто отправьте' \
+                           'новое описание.\n\n'
+
+            case 'contact':
+                if not self.contacts:
+                    return '📞 Введите номер телефона который будет отображаться в объявлении:\n\n'
+                else:
+                    return '📞 Чтобы изменить номер телефона, просто отправьте' \
+                           'отправьте новый номер.\n\n'
+
+            case 'price':
+                if not self.price:
+                    return '💸 Введите желаемую цену товара или услуг и укажите ' \
+                           'валюту:\n\n'
+                else:
+                    return '💸 Чтобы изменить желаемую цену товара или услуг, просто отправьте ' \
+                           'новую цену (этот раздел можно пропустить).\n\n'
+
+            case 'title':
+                if not self.title:
+                    return '🔡 Введите заголовок товара или услуг который вы хотите купить' \
+                           '(этот раздел можно пропустить):\n\n'
+                else:
+                    return '🔡 Чтобы изменить заголовок товара или услуг, просто отправьте' \
+                           'новое название.\n\n'
+
+            case _:
+                if not self.photos_ids:
+                    return '🖼 Отправьте картинки товара или услуг который вы хотите купить' \
+                           ' по одному (этот раздел можно пропустить).\n' \
+                           'P.s. Максимальное количество картинок: <code>5</code>:\n\n'
+                else:
+                    return '🖼 Чтобы изменить картинку товара или услуг, просто отправьте' \
+                           'новую картинку, а чтобы удалить картинку нажми на ' \
+                           'кнопку ниже.\n\n'
 
     def preview(self) -> str:
         pass

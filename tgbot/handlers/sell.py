@@ -2,7 +2,6 @@ import copy
 import operator
 from typing import Union, Dict, Any
 
-import flag
 import phonenumbers
 from aiogram import types, Bot
 from aiogram.types import MediaGroup
@@ -46,9 +45,10 @@ async def get_sell_text(dialog_manager: DialogManager, **_kwargs):
     return {"sell_text": sell_ad.to_text(), "page": get_active_section(state)}
 
 
-async def get_preview_text(dialog_manager: DialogManager, **_kwargs):
-    widget_data = dialog_manager.current_context().widget_data
-    sell_data = copy.deepcopy(widget_data)
+async def get_final_text(dialog_manager: DialogManager, **_kwargs):
+    state: str = dialog_manager.current_context().state.state.split(":")[-1]
+    widget_data: dict = dialog_manager.current_context().widget_data
+    sell_data: dict = copy.deepcopy(widget_data)
 
     sell_data.pop('currency_code', None)
     sell_data.pop('current_page', None)
@@ -64,37 +64,15 @@ async def get_preview_text(dialog_manager: DialogManager, **_kwargs):
     if len(sell_ad.photos_ids) > 1:
         widget_data['photos_len'] = len(sell_ad.photos_ids)
 
-    return {"preview_text": sell_ad.preview(), "file_id": get_current_file_id(sell_ad.photos_ids, current_page),
-            "show_scroll": len(sell_ad.photos_ids) > 1,
-            "photo_text": len(sell_ad.photos_ids) > 1 and current_page and f"{current_page}/{len(sell_ad.photos_ids)}"}
+    return {
+        "final_text": sell_ad.preview() if state == "preview" else sell_ad.confirm(),
+        "file_id": get_current_file_id(sell_ad.photos_ids, current_page),
+        "show_scroll": len(sell_ad.photos_ids) > 1,
+        "photo_text": len(sell_ad.photos_ids) > 1 and current_page and f"{current_page}/{len(sell_ad.photos_ids)}"
+    }
 
 
-async def get_confirm_text(dialog_manager: DialogManager, **_kwargs):
-    widget_data = dialog_manager.current_context().widget_data
-
-    sell_data = copy.deepcopy(widget_data)
-    sell_data.pop('currency_code', None)
-    sell_data.pop('current_page', None)
-    sell_data.pop('photos_len', None)
-
-    state = dialog_manager.current_context().state.state.split(":")[-1]
-
-    sell_ad = SalesAd(state=state, **sell_data)
-
-    if sell_ad.photos_ids:
-        current_page = widget_data.setdefault('current_page', 1)
-    else:
-        current_page = None
-
-    if len(sell_ad.photos_ids) > 1:
-        widget_data['photos_len'] = len(sell_ad.photos_ids)
-
-    return {"confirm_text": sell_ad.confirm(), "file_id": get_current_file_id(sell_ad.photos_ids, current_page),
-            "show_scroll": len(sell_ad.photos_ids) > 1,
-            "photo_text": len(sell_ad.photos_ids) > 1 and current_page and f"{current_page}/{len(sell_ad.photos_ids)}"}
-
-
-async def on_confirm(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
+async def on_confirm(call: types.CallbackQuery, _button: Button, manager: DialogManager):
     obj = manager.event
     bot: Bot = obj.bot
     widget_data = manager.current_context().widget_data
@@ -104,18 +82,26 @@ async def on_confirm(_call: types.CallbackQuery, _button: Button, manager: Dialo
     sell_data.pop('currency_code', None)
     sell_data.pop('current_page', None)
     sell_data.pop('photos_len', None)
+    sell_data.update({"mention": obj.from_user.get_mention()})
 
     sell_ad = SalesAd(**sell_data)
 
     album = MediaGroup()
 
-    for file_id in sell_ad.photos_ids[:-1]:
-        album.attach_photo(photo=file_id)
+    if sell_ad.photos_ids:
+        for file_id in sell_ad.photos_ids[:-1]:
+            album.attach_photo(photo=file_id)
 
-    album.attach_photo(photo=sell_ad.photos_ids[-1], caption=sell_ad.post())
+        album.attach_photo(photo=sell_ad.photos_ids[-1], caption=sell_ad.post())
 
-    await bot.send_media_group(chat_id=config.tg_bot.channel_id,
-                               media=album)
+        await bot.send_media_group(chat_id=config.tg_bot.channel_id,
+                                   media=album)
+    else:
+        await bot.send_message(chat_id=config.tg_bot.channel_id,
+                               text=sell_ad.post())
+
+    await call.answer("Объявление было успешно опубликовано в канале!")
+    await manager.start(Main.main, mode=StartMode.RESET_STACK)
 
 
 async def check_required_fields(call: types.CallbackQuery, _button: Button, manager: DialogManager):
@@ -427,9 +413,7 @@ sell_dialog = Dialog(
         getter=[get_sell_text]
     ),
     Window(
-        Format(
-            text="{preview_text}",
-            when="preview_text"),
+        Format(text="{final_text}", when="final_text"),
         Row(
             Button(Const("<<"), id="left_photo", on_click=change_photo),
             Button(Format(text="{photo_text}", when="photo_text"), id="photo_pos"),
@@ -445,16 +429,10 @@ sell_dialog = Dialog(
             state=Sell.tags,
             on_click=clear_photo_pagination_data),
         state=Sell.preview,
-        getter=[get_preview_text]
+        getter=[get_final_text]
     ),
     Window(
-        Format(text="{confirm_text}", when="confirm_text"),
-        Row(
-            Button(Const("<<"), id="left_photo", on_click=change_photo),
-            Button(Format(text="{photo_text}", when="photo_text"), id="photo_pos"),
-            Button(Const(">>"), id="right_photo", on_click=change_photo),
-            when="show_scroll"
-        ),
+        Format(text="{final_text}", when="final_text"),
         DynamicMediaFileId(
             file_id=Format(text='{file_id}'),
             when="file_id"),
@@ -462,6 +440,12 @@ sell_dialog = Dialog(
             text=Const("✅ Да"),
             id="yes",
             on_click=on_confirm
+        ),
+        Row(
+            Button(Const("<<"), id="left_photo", on_click=change_photo),
+            Button(Format(text="{photo_text}", when="photo_text"), id="photo_pos"),
+            Button(Const(">>"), id="right_photo", on_click=change_photo),
+            when="show_scroll"
         ),
         Row(
           SwitchTo(
@@ -472,7 +456,7 @@ sell_dialog = Dialog(
           Start(text=Const("В главное меню"), id="to_main", state=Main.main, mode=StartMode.RESET_STACK),
         ),
         state=Sell.confirm,
-        getter=[get_confirm_text]
+        getter=[get_final_text]
     ),
     on_start=set_default
 )
