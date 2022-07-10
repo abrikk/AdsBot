@@ -1,43 +1,22 @@
 import operator
-from typing import Dict
 
 from aiogram import types
-from aiogram_dialog import Dialog, Window, DialogManager, StartMode
+from aiogram_dialog import Dialog, Window, StartMode
 from aiogram_dialog.widgets.input import TextInput, MessageInput
 from aiogram_dialog.widgets.kbd import Row, Button, SwitchTo, \
     Start, Checkbox, Radio
 from aiogram_dialog.widgets.text import Const, Format
-from aiogram_dialog.widgets.when import Whenable
 
-from tgbot.handlers.buy_and_sell.buy import get_buy_text
 from tgbot.handlers.buy_and_sell.form import price_validator, get_currency_data, currency_selected, contact_validator, \
     delete_tag, tag_exist, invalid_input, change_page, fixed_size_1024, fixed_size_64, pic_validator, change_photo, \
-    clear_photo_pagination_data, set_default, tag_buttons, check_required_fields
-from tgbot.handlers.buy_and_sell.sell import on_confirm, get_sell_text, get_sell_final_text
+    clear_photo_pagination_data, set_default, tag_buttons, check_required_fields, to_state
+from tgbot.handlers.buy_and_sell.getters import get_final_text, on_confirm, get_form_text
 from tgbot.misc.media_widget import DynamicMediaFileId
-from tgbot.misc.states import Sell, Buy, Main
+from tgbot.misc.states import Main
 
 
 # getting dialog
 def get_dialog(where: str) -> Dialog:
-    to_state: dict = {
-        "sell": Sell,
-        "buy": Buy
-    }
-
-    getters: dict = {
-        "sell": get_sell_text,
-        "buy": get_buy_text
-    }
-
-    final_getters: dict = {
-        "sell": get_sell_final_text,
-        "buy": get_sell_final_text
-    }
-
-    async def is_sell(_data: Dict, _widget: Whenable, _manager: DialogManager):
-        return where == "sell"
-
     def get_widgets():
         buttons = (
             Format(text="{" + f"{where}" + "_text}", when=f"{where}" + "_text"),
@@ -61,8 +40,7 @@ def get_dialog(where: str) -> Dialog:
                 checked_text=Const("Торг уместен: Да ✅"),
                 unchecked_text=Const("Торг уместен: Нет ❌"),
                 id="negotiable",
-                default=False,
-                when=is_sell
+                default=False
             ),
             Radio(
                 checked_text=Format("✔️ {item[0]}"),
@@ -78,7 +56,7 @@ def get_dialog(where: str) -> Dialog:
                 content_types=types.ContentType.TEXT
             ),
             state=to_state.get(where).price,
-            getter=[getters.get(where), get_currency_data]
+            getter=[get_form_text, get_currency_data]
         )
     else:
         price_window = Window(
@@ -96,7 +74,7 @@ def get_dialog(where: str) -> Dialog:
                 content_types=types.ContentType.TEXT
             ),
             state=to_state.get(where).price,
-            getter=[getters.get(where), get_currency_data]
+            getter=[get_form_text, get_currency_data]
         )
     order_windows: list = [
         price_window,
@@ -107,7 +85,7 @@ def get_dialog(where: str) -> Dialog:
                 content_types=types.ContentType.TEXT
             ),
             state=to_state.get(where).contact,
-            getter=[getters.get(where)]
+            getter=[get_form_text]
         ),
     ]
 
@@ -125,7 +103,7 @@ def get_dialog(where: str) -> Dialog:
             ),
             *get_widgets(),
             state=to_state.get(where).tags,
-            getter=[getters.get(where)]
+            getter=[get_form_text]
         ),
         Window(
             *get_widgets(),
@@ -136,7 +114,7 @@ def get_dialog(where: str) -> Dialog:
                 on_success=change_page
             ),
             state=to_state.get(where).description,
-            getter=[getters.get(where)]
+            getter=[get_form_text]
         ),
         *order_windows,
         Window(
@@ -147,7 +125,7 @@ def get_dialog(where: str) -> Dialog:
                 on_error=invalid_input,
                 on_success=change_page),
             state=to_state.get(where).title,
-            getter=[getters.get(where)]
+            getter=[get_form_text]
         ),
         Window(
             *get_widgets(),
@@ -156,7 +134,7 @@ def get_dialog(where: str) -> Dialog:
                 content_types=[types.ContentType.ANY]
             ),
             state=to_state.get(where).photo,
-            getter=[getters.get(where)]
+            getter=[get_form_text]
         ),
         Window(
             Format(text="{final_text}", when="final_text"),
@@ -175,7 +153,7 @@ def get_dialog(where: str) -> Dialog:
                 state=to_state.get(where).tags,
                 on_click=clear_photo_pagination_data),
             state=to_state.get(where).preview,
-            getter=[final_getters.get(where)]
+            getter=[get_final_text]
         ),
         Window(
             Format(text="{final_text}", when="final_text"),
@@ -202,7 +180,7 @@ def get_dialog(where: str) -> Dialog:
                 Start(text=Const("В главное меню"), id="to_main", state=Main.main, mode=StartMode.RESET_STACK),
             ),
             state=to_state.get(where).confirm,
-            getter=[final_getters.get(where)]
+            getter=[get_final_text]
         ),
         on_start=set_default
     )

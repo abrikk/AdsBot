@@ -199,7 +199,7 @@ class SalesAd(Ad):
             post_list.append(f"Продается {hbold(self.title)}")
 
         post_list.append(f"{hitalic(self.description)}")
-        post_list.append(f"{hcode(str(self.price) + ' ' + self.currency + negotiable)}")
+        post_list.append(f"{hcode(str(self.price) + ' ' + self.currency) + ' ' + negotiable}")
         post_list.append(f"Контактные данные: {self.humanize_phone_numbers()}")
         post_list.append(f"Телеграм: {self.mention}")
         return '\n\n'.join(post_list)
@@ -217,7 +217,7 @@ class PurchaseAd(Ad):
         tdescription = self.state == 'description' and hunderline(
             'Описание товара или услуг') or 'Описание товара или услуг'
         tcontact = self.state == 'contact' and hunderline('Контактные данные') or 'Контактные данные'
-        tprice = self.state == 'price' and hunderline('Цена') or 'Желаемая цена (опционально)'
+        tprice = self.state == 'price' and hunderline('Желаемая цена (опционально)') or 'Желаемая цена (опционально)'
         ttitle = self.state == 'title' and hunderline('Заголовок товара или услуг (опционально)') \
                  or 'Заголовок товара или услуг (опционально)'
         tphoto = self.state == 'photo' and hunderline('Фото (опционально)') or 'Фото (опционально)'
