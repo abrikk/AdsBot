@@ -7,6 +7,7 @@ from alembic import context
 
 from tgbot.config import Config, load_config
 from tgbot.models.ad import Ads
+from tgbot.models.restriction import Restriction
 from tgbot.models.tag import Tag
 from tgbot.models.user import User
 from tgbot.services.db_base import Base

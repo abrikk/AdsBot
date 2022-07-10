@@ -21,7 +21,7 @@ class Ads(Base):
                         onupdate=func.now(),
                         server_default=func.now())
 
-    administration_table = relationship(
+    ads = relationship(
         "Tag",
         secondary=ads_tags,
         back_populates="tags"

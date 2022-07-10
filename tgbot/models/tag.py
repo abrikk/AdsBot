@@ -7,8 +7,16 @@ from tgbot.services.db_base import Base
 ads_tags = Table(
     "ads_tags",
     Base.metadata,
-    Column("tag_name", ForeignKey("tags.id"), primary_key=True),
-    Column("post_id", ForeignKey("ads.post_id"), primary_key=True),
+    Column(
+        "tag_name",
+        ForeignKey("tags.id", ondelete="CASCADE"),
+        primary_key=True
+    ),
+    Column(
+        "post_id",
+        ForeignKey("ads.post_id", ondelete="CASCADE"),
+        primary_key=True
+    ),
 )
 
 
@@ -21,7 +29,7 @@ class Tag(Base):
                         default=func.now(),
                         onupdate=func.now(),
                         server_default=func.now())
-    ads_table = relationship(
+    tags = relationship(
         "Ads",
         secondary=ads_tags,
         back_populates="ads"
