@@ -1,5 +1,7 @@
 from sqlalchemy import Column, BigInteger, String, TIMESTAMP, func, Integer
+from sqlalchemy.orm import relationship
 
+from tgbot.models.administration import ads_administration
 from tgbot.services.db_base import Base
 
 
@@ -18,6 +20,12 @@ class Ads(Base):
                         default=func.now(),
                         onupdate=func.now(),
                         server_default=func.now())
+
+    administration_table = relationship(
+        "Administration",
+        secondary=ads_administration,
+        back_populates="administration"
+    )
 
     __mapper_args__ = {"eager_defaults": True}
 

@@ -1,6 +1,15 @@
-from sqlalchemy import Column, BigInteger, String, TIMESTAMP, func, Integer
+from sqlalchemy import Column, BigInteger, String, TIMESTAMP, func, Integer, Table, ForeignKey
+from sqlalchemy.orm import relationship
 
 from tgbot.services.db_base import Base
+
+
+ads_administration = Table(
+    "ads_administration",
+    Base.metadata,
+    Column("post_id", ForeignKey("administration.id"), primary_key=True),
+    Column("tag_name", ForeignKey("ads.post_id"), primary_key=True),
+)
 
 
 class Administration(Base):
@@ -18,8 +27,15 @@ class Administration(Base):
                         default=func.now(),
                         onupdate=func.now(),
                         server_default=func.now())
+    ads_table = relationship(
+        "Ads",
+        secondary=ads_administration,
+        back_populates="ads"
+    )
 
     __mapper_args__ = {"eager_defaults": True}
 
     def __repr__(self):
         return f'Management (ID: {self.common_id} - {[self.__dict__]})'
+
+
