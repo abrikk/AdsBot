@@ -2,7 +2,7 @@ import copy
 
 from aiogram_dialog import DialogManager
 
-from tgbot.handlers.sell import get_active_section
+from tgbot.handlers.buy_and_sell.sell import get_active_section
 from tgbot.misc.ad import PurchaseAd
 
 

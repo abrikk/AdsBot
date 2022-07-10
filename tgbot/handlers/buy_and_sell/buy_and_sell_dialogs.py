@@ -9,11 +9,11 @@ from aiogram_dialog.widgets.kbd import Row, Button, SwitchTo, \
 from aiogram_dialog.widgets.text import Const, Format
 from aiogram_dialog.widgets.when import Whenable
 
-from tgbot.handlers.buy import get_buy_text
-from tgbot.handlers.form import price_validator, get_currency_data, currency_selected, contact_validator, \
+from tgbot.handlers.buy_and_sell.buy import get_buy_text
+from tgbot.handlers.buy_and_sell.form import price_validator, get_currency_data, currency_selected, contact_validator, \
     delete_tag, tag_exist, invalid_input, change_page, fixed_size_1024, fixed_size_64, pic_validator, change_photo, \
     clear_photo_pagination_data, set_default, tag_buttons, check_required_fields
-from tgbot.handlers.sell import on_confirm, get_sell_text, get_sell_final_text
+from tgbot.handlers.buy_and_sell.sell import on_confirm, get_sell_text, get_sell_final_text
 from tgbot.misc.media_widget import DynamicMediaFileId
 from tgbot.misc.states import Sell, Buy, Main
 

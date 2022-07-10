@@ -6,7 +6,7 @@ from aiogram_dialog import DialogManager, StartMode
 from aiogram_dialog.widgets.kbd import Button
 
 from tgbot.config import Config
-from tgbot.handlers.form import get_current_file_id, get_active_section
+from tgbot.handlers.buy_and_sell.form import get_current_file_id, get_active_section
 from tgbot.misc.ad import SalesAd
 from tgbot.misc.states import Main
 

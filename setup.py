@@ -1,7 +1,7 @@
 from aiogram import Dispatcher
 from aiogram_dialog import DialogRegistry
 
-from tgbot.handlers.buy_and_sell_dialogs import sell_dialog, buy_dialog
+from tgbot.handlers.buy_and_sell.buy_and_sell_dialogs import sell_dialog, buy_dialog
 from tgbot.handlers.main_handler import main_dialog
 from tgbot.handlers.start import register_start
 from tgbot.handlers.test import register_test
