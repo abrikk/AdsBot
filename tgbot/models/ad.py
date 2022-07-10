@@ -1,7 +1,7 @@
 from sqlalchemy import Column, BigInteger, String, TIMESTAMP, func, Integer
 from sqlalchemy.orm import relationship
 
-from tgbot.models.administration import ads_administration
+from tgbot.models.tag import ads_tags
 from tgbot.services.db_base import Base
 
 
@@ -22,9 +22,9 @@ class Ads(Base):
                         server_default=func.now())
 
     administration_table = relationship(
-        "Administration",
-        secondary=ads_administration,
-        back_populates="administration"
+        "Tag",
+        secondary=ads_tags,
+        back_populates="tags"
     )
 
     __mapper_args__ = {"eager_defaults": True}

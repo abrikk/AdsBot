@@ -4,24 +4,18 @@ from sqlalchemy.orm import relationship
 from tgbot.services.db_base import Base
 
 
-ads_administration = Table(
-    "ads_administration",
+ads_tags = Table(
+    "ads_tags",
     Base.metadata,
-    Column("post_id", ForeignKey("administration.id"), primary_key=True),
-    Column("tag_name", ForeignKey("ads.post_id"), primary_key=True),
+    Column("tag_name", ForeignKey("tags.id"), primary_key=True),
+    Column("post_id", ForeignKey("ads.post_id"), primary_key=True),
 )
 
 
-class Administration(Base):
-    __tablename__ = "administration"
+class Tag(Base):
+    __tablename__ = "tags"
     id = Column(Integer, primary_key=True)
-    common_id = Column(BigInteger, nullable=False)
-    user_id = Column(BigInteger, nullable=True)
     tag_name = Column(String(length=100), nullable=True)
-    tag_limit = Column(Integer, nullable=True)
-    contacts_limit = Column(Integer, nullable=True)
-    pic_limit = Column(Integer, nullable=True)
-    post_limit = Column(Integer, nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True),
                         default=func.now(),
@@ -29,7 +23,7 @@ class Administration(Base):
                         server_default=func.now())
     ads_table = relationship(
         "Ads",
-        secondary=ads_administration,
+        secondary=ads_tags,
         back_populates="ads"
     )
 
