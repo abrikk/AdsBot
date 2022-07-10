@@ -36,6 +36,10 @@ class Ad(ABC):
     def confirm(self) -> str:
         pass
 
+    @abstractmethod
+    def post(self) -> str:
+        pass
+
     def humanize_phone_numbers(self) -> str:
         list_of_numbers: list[str] = list()
         for number in self.contacts:
@@ -278,7 +282,65 @@ class PurchaseAd(Ad):
                            'кнопку ниже.\n\n'
 
     def preview(self) -> str:
-        pass
+        preview_list: list[str] = []
+
+        if self.tags:
+            preview_list.append(self.make_tags())
+        else:
+            preview_list.append('Теги не указаны ❗️')
+
+        if self.title:
+            preview_list.append(f"Куплю {hbold(self.title)}")
+
+        if self.description:
+            preview_list.append(f"{hitalic(self.description)}")
+        else:
+            preview_list.append("Описание отсутствует ❗️")
+
+        if self.price:
+            preview_list.append(f"Желаемая цена: {hcode(str(self.price) + ' ' + self.currency)}")
+
+        if self.contacts:
+            preview_list.append(f"Контактные данные: {self.humanize_phone_numbers()}")
+        else:
+            preview_list.append("Контактные данные не указаны ❗️")
+
+        if self.photos_ids:
+            preview_list.append(f"Картинки: {len(self.photos_ids)} шт")
+
+        return '\n\n'.join(preview_list)
 
     def confirm(self) -> str:
-        pass
+        confirm_list: list[str] = [
+            "Вы уверены что хотите опубликовать пост об объявлении"
+            " со следующими данными?",
+            f"Теги: {self.make_tags()}",
+            f"Описание: {hitalic(self.description)}"
+        ]
+
+        if self.price:
+            confirm_list.append(f"Желаемая цена: {hcode(str(self.price) + ' ' + self.currency)}")
+
+        confirm_list.append(f"Контактные данные: {self.humanize_phone_numbers()}")
+
+        if self.title:
+            confirm_list.append(f"Заголовок: {hbold(self.title)}")
+        if self.photos_ids:
+            confirm_list.append(f"Картинки: {len(self.photos_ids)} шт")
+
+        return '\n\n'.join(confirm_list)
+
+    def post(self) -> str:
+        post_list: list[str] = [
+            self.make_tags()
+        ]
+
+        if self.title:
+            post_list.append(f"Куплю {hbold(self.title)}")
+
+        post_list.append(f"{hitalic(self.description)}")
+        if self.price:
+            post_list.append(f"{hcode(str(self.price) + ' ' + self.currency)}")
+        post_list.append(f"Контактные данные: {self.humanize_phone_numbers()}")
+        post_list.append(f"Телеграм: {self.mention}")
+        return '\n\n'.join(post_list)
