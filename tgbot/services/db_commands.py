@@ -1,5 +1,7 @@
 from sqlalchemy import select
 
+from tgbot.models.restriction import Restriction
+from tgbot.models.tag import Tag
 from tgbot.models.user import User
 
 
@@ -27,3 +29,18 @@ class DBCommands:
                     role=role)
         self.session.add(user)
         return user
+
+    async def get_restrictions(self):
+        sql = select(Restriction).order_by(Restriction.order)
+        request = await self.session.execute(sql)
+        return request.scalars().all()
+
+    async def get_values_of_restrictions(self):
+        sql = select(Restriction.number).order_by(Restriction.order)
+        request = await self.session.execute(sql)
+        return request.scalars().all()
+
+    async def get_tags(self):
+        sql = select(Tag.tag_name).order_by(Tag.created_at.desc())
+        request = await self.session.execute(sql)
+        return request.scalars().all()

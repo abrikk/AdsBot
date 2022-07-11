@@ -8,6 +8,7 @@ from tgbot.models.user import User
 
 
 async def start_bot(message: types.Message, config: Config, session, dialog_manager: DialogManager):
+    print("here?")
     user_id = message.from_user.id
     user: User = await session.get(User, user_id)
 
@@ -34,7 +35,9 @@ async def start_bot(message: types.Message, config: Config, session, dialog_mana
                 f"Всё что тебе нужно - это выбрать рубрику ниже"
                 f" и следовать дальнейшим инструкциям.\n"
                 f"За подробной информацией отправьте команду /help.")
-        await dialog_manager.start(state=Main.main, data={"start_text": text})
+        await dialog_manager.start(state=Main.main, data={
+            "start_text": text, "user_role": user.role
+        })
     else:
         await dialog_manager.start(state=Main.main, mode=StartMode.RESET_STACK)
 

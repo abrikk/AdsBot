@@ -23,7 +23,7 @@ class Ad(Base):
     tags = relationship(
         "Tag",
         secondary=ads_tags,
-        back_populates="ads"
+        lazy="selectin"
     )
 
     __mapper_args__ = {"eager_defaults": True}

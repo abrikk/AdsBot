@@ -3,13 +3,15 @@ from aiogram.dispatcher.filters.state import StatesGroup, State
 
 class Main(StatesGroup):
     main = State()
-
     my_ads = State()
 
+
+class AdminPanel(StatesGroup):
     admin = State()
     restriction = State()
-
-
+    tag = State()
+    add_tag = State()
+    del_tag = State()
 
 
 class Buy(StatesGroup):

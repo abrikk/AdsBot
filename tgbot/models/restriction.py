@@ -5,7 +5,8 @@ from tgbot.services.db_base import Base
 
 class Restriction(Base):
     __tablename__ = "restrictions"
-    id = Column(Integer, primary_key=True)
+    order = Column(Integer, unique=True)
+    uid = Column(String(length=16), primary_key=True)
     restriction_name = Column(String(length=64), nullable=False)
     number = Column(BigInteger, nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
@@ -17,6 +18,6 @@ class Restriction(Base):
     __mapper_args__ = {"eager_defaults": True}
 
     def __repr__(self):
-        return f'Restriction (Name - Number: {self.restriction_name} - {self.number})'
+        return f'Restriction (Name: {self.restriction_name} - Number: {self.number})'
 
 

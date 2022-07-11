@@ -8,7 +8,7 @@ from tgbot.config import load_config, Config
 async def test(message: types.Message, config: Config):
     print(config.tg_bot.channel_id)
     member = await message.bot.get_chat_member(str(config.tg_bot.channel_id),
-                                               304536646)
+                                               1566111340)
 
     # member = await message.bot.get_chat_administrators(config.tg_bot.channel_id)
     print(member.status)
