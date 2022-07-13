@@ -40,12 +40,12 @@ main_dialog = Dialog(
         Format(text="{main_text}", when="main_text"),
         Row(
             Start(
-                text=Const("Куплю"),
+                text=Const("🟠 Куплю"),
                 id="buy",
                 state=Buy.tags
             ),
             Start(
-                text=Const("Продам"),
+                text=Const("🔴 Продам"),
                 id="sell",
                 state=Sell.tags
             )
@@ -57,7 +57,7 @@ main_dialog = Dialog(
             when=is_owner
         ),
         SwitchInlineQueryCurrentChat(
-            text=Const("Искать пользователей"),
+            text=Const("👥 Искать пользователей"),
             id="search_user",
             switch_inline_query_current_chat=Const("пользователи"),
             when=is_admin

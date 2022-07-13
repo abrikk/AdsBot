@@ -37,16 +37,16 @@ async def get_show_user_text(dialog_manager: DialogManager, **_kwargs) -> dict:
     session = dialog_manager.data.get("session")
     user: User = await session.get(User, user_id)
     if user.restricted_till:
-        restricted_till = f"Ограничен до: " \
+        restricted_till = f"⚠️ Ограничен до: " \
                           f"{user.restricted_till.strftime('%d.%m.%Y %H:%M:%S')}\n"
     else:
         restricted_till = None
 
-    user_text = ("ID пользователя: {id}\n"
-                 "Пользователь: <code>{name}</code>\n"
-                 "Роль: {role}\n"
+    user_text = ("🆔 ID пользователя: {id}\n"
+                 "👤 Пользователь: <code>{name}</code>\n"
+                 "📯 Роль: {role}\n"
                  "{restricted_till}"
-                 "Дата регистрации: {created_at}").format(
+                 "🗓 Дата регистрации: {created_at}").format(
         id=hcode(user.user_id),
         name=user.first_name + (user.last_name and " " + user.last_name or ""),
         role=hcode(user.role),
@@ -98,12 +98,13 @@ async def restrict_user(call: types.CallbackQuery, _widget: Any, manager: Dialog
     user.restricted_till = datetime.today() + timedelta(days=int(days))
     await session.commit()
     await call.answer("Пользователь ограничен на: " + days + " дней")
+    manager.current_context().widget_data["restrict"] = False
 
 show_user_dialog = Dialog(
     Window(
         Format(text="{user_text}", when="user_text"),
         Button(
-            text=Const("Убрать ограничения"),
+            text=Const("🗑 Убрать ограничения"),
             id="remove_restrictions",
             on_click=remove_restrictions
         ),

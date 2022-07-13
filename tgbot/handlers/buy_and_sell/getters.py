@@ -15,7 +15,6 @@ from tgbot.services.db_commands import DBCommands
 
 async def get_form_text(dialog_manager: DialogManager, **_kwargs):
     widget_data = dialog_manager.current_context().widget_data
-    print("widget_data", widget_data)
     db: DBCommands = dialog_manager.data.get("db_commands")
     tag, contact, pic, post = await db.get_values_of_restrictions()
     limits: dict = {
@@ -32,7 +31,6 @@ async def get_form_text(dialog_manager: DialogManager, **_kwargs):
     data.pop('sg_tags', None)
 
     state: list[str] = dialog_manager.current_context().state.state.split(":")
-    print(state)
     if state[0] == "Sell":
         ad = SalesAd(state=state[-1], **data)
     else:
@@ -120,7 +118,7 @@ async def get_tags_data(dialog_manager: DialogManager, **_kwargs):
         tags.remove(tag)
 
     tag_dict: dict = {
-        "tags_data": [(tag, ) for tag in tags],
+        "tags_data": [("#️⃣" + tag, ) for tag in tags],
         "show_scroll": len(user_tags) < restriction.number and len(tags) > 8,
         "show_tags": len(user_tags) < restriction.number and len(tags) <= 8,
     }
