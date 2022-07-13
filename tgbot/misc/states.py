@@ -17,14 +17,11 @@ class AdminPanel(StatesGroup):
 class Buy(StatesGroup):
     tags = State()
     description = State()
-    price = State()
     contact = State()
 
+    price = State()
     title = State()
     photo = State()
-
-    confirm = State()
-    done = State()
 
 
 class Sell(StatesGroup):
@@ -36,8 +33,6 @@ class Sell(StatesGroup):
     title = State()
     photo = State()
 
-    confirm = State()
-
 
 class Preview(StatesGroup):
     preview = State()
@@ -45,3 +40,7 @@ class Preview(StatesGroup):
 
 class ConfirmAd(StatesGroup):
     confirm = State()
+
+
+class ShowUser(StatesGroup):
+    true = State()

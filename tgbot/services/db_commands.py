@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, or_, update, and_
 
 from tgbot.models.restriction import Restriction
 from tgbot.models.tag import Tag
@@ -14,6 +14,38 @@ class DBCommands:
         request = await self.session.execute(sql)
         user = request.scalar()
         return user
+
+    async def get_user_role(self, user_id: int):
+        sql = select(User.role).where(User.user_id == user_id)
+        request = await self.session.execute(sql)
+        return request.scalars().first()
+
+    async def update_user_role(self, user_id: int, role: str):
+        sql = update(User).where(User.user_id == user_id).values(role=role)
+        result = await self.session.execute(sql)
+        await self.session.commit()
+        return result
+
+    async def get_users(self, user_id: int, like: str = None, limit: int = 50, offset: int = 0):
+        sql = select(User).select_from(User).where(
+            and_(
+                User.role != 'owner',
+                User.user_id != user_id
+            )
+        )
+
+        if like:
+            sql = sql.where(
+                or_(
+                    User.first_name.ilike(f"%{like}%"),
+                    User.last_name.ilike(f"%{like}%")
+                )
+            )
+
+        sql = sql.order_by(User.created_at).limit(limit).offset(offset)
+        result = await self.session.execute(sql)
+        scalars = result.scalars().all()
+        return scalars
 
     async def add_user(self,
                        user_id: int,

@@ -11,6 +11,7 @@ class User(Base):
     username = Column(String(length=100), nullable=True, unique=True)
     role = Column(String(length=100), default='user')
     post_limit = Column(Integer, nullable=True)
+    restricted_till = Column(TIMESTAMP(timezone=True), nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True),
                         default=func.now(),

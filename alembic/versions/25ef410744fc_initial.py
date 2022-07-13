@@ -1,8 +1,8 @@
 """initial
 
-Revision ID: 055cb21adff8
+Revision ID: 25ef410744fc
 Revises: 
-Create Date: 2022-07-12 10:55:38.844726
+Create Date: 2022-07-13 13:38:04.094819
 
 """
 from alembic import op
@@ -14,7 +14,7 @@ from sqlalchemy import orm
 from tgbot.models.restriction import Restriction
 from tgbot.models.tag import Tag
 
-revision = '055cb21adff8'
+revision = '25ef410744fc'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -63,6 +63,7 @@ def upgrade() -> None:
                     sa.Column('username', sa.String(length=100), nullable=True),
                     sa.Column('role', sa.String(length=100), nullable=True),
                     sa.Column('post_limit', sa.Integer(), nullable=True),
+                    sa.Column('restricted_till', sa.TIMESTAMP(timezone=True), nullable=True),
                     sa.Column('created_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'),
                               nullable=True),
                     sa.Column('updated_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'),
