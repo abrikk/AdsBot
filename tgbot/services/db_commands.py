@@ -41,6 +41,11 @@ class DBCommands:
         return request.scalars().all()
 
     async def get_tags(self):
-        sql = select(Tag.tag_name).order_by(Tag.created_at.desc())
+        sql = select(Tag.tag_name).order_by(Tag.created_at)
         request = await self.session.execute(sql)
         return request.scalars().all()
+
+    async def get_restriction(self, uid: str):
+        sql = select(Restriction).where(Restriction.uid == uid)
+        request = await self.session.execute(sql)
+        return request.scalars().first()

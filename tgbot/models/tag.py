@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, TIMESTAMP, func, Table, ForeignKey
+from sqlalchemy import Column, String, TIMESTAMP, func, Table, ForeignKey, Integer
 
 from tgbot.services.db_base import Base
 

@@ -1,15 +1,16 @@
+import copy
 from typing import Union, Dict, Any
 
 import phonenumbers
 from aiogram import types
-from aiogram_dialog import DialogManager, ShowMode
+from aiogram_dialog import DialogManager, ShowMode, Data
 from aiogram_dialog.manager.protocols import ManagedDialogAdapterProto
 from aiogram_dialog.widgets.input import TextInput
-from aiogram_dialog.widgets.kbd import Button, Group
-from aiogram_dialog.widgets.text import Const
+from aiogram_dialog.widgets.kbd import Button, Select
+from aiogram_dialog.widgets.managed import ManagedWidgetAdapter
 from aiogram_dialog.widgets.when import Whenable
 
-from tgbot.misc.states import Sell, Buy
+from tgbot.misc.states import Sell, Buy, Preview, ConfirmAd
 
 REQUIRED_FIELDS = {
     "sell": {"description", "price", "contacts", "tags"},
@@ -34,23 +35,35 @@ def get_active_section(state: str):
     return sections.get(state)
 
 
+def when_not(key: str):
+    def f(data, _whenable, _manager):
+        return not data.get(key)
+
+    return f
+
+
 def get_current_file_id(photos: list[str] = None, page: int | None = None) -> None | str:
     if not all([photos, page]):
         return None
     else:
-        return photos[page-1]
+        return photos[page - 1]
 
 
-async def clear_photo_pagination_data(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
-    widget_data = manager.current_context().widget_data
-    widget_data.pop('current_page', None)
-    widget_data.pop('photos_len', None)
+async def on_back(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
+    start_data = manager.current_context().start_data
+    print(1, 1, start_data)
+    start_data.pop("state_class", None)
+    start_data.pop('current_page', None)
+    start_data.pop('photos_len', None)
+    print(0, 0, start_data)
+
+    await manager.done(start_data)
 
 
 async def change_photo(_call: types.CallbackQuery, button: Button, manager: DialogManager):
-    widget_data = manager.current_context().widget_data
-    current_page: int = widget_data.get('current_page')
-    photos_len: int = widget_data.get('photos_len')
+    data = manager.current_context().start_data
+    current_page: int = data.get('current_page')
+    photos_len: int = data.get('photos_len')
 
     action: str = button.widget_id
 
@@ -63,7 +76,7 @@ async def change_photo(_call: types.CallbackQuery, button: Button, manager: Dial
         if current_page > photos_len:
             current_page = 1
 
-    widget_data['current_page'] = current_page
+    data['current_page'] = current_page
 
 
 async def change_page(_obj: Union[types.CallbackQuery, types.Message], button: Union[Button, TextInput],
@@ -86,24 +99,13 @@ async def change_page(_obj: Union[types.CallbackQuery, types.Message], button: U
         await manager.dialog().next()
 
 
-async def add_tag(_call: types.CallbackQuery, button: Button, manager: DialogManager):
-    tag = button.widget_id
-
-    tags = {
-        "childs_world": "детский_мир",
-        "real_estate": "недвижимость",
-        "transport": "транспорт",
-        "work": "работа",
-        "animals": "животные",
-        "house_garden": "дом_и_сад",
-        "electronics": "электроника",
-        "services": "услуги",
-        "fashion_style": "мода_и_стиль",
-        "sport": "спорт",
-    }
-
+async def add_tag(_call: types.CallbackQuery, _widget: ManagedWidgetAdapter[Select], manager: DialogManager,
+                  tag: str):
+    tag_limit: int = manager.current_context().widget_data.get('tag_limit')
     tags_data = manager.current_context().widget_data.setdefault("tags", [])
-    tags_data.append(tags.get(tag))
+    tags_data.append(tag)
+    if tag_limit == len(tags_data):
+        await manager.dialog().next()
 
 
 async def currency_selected(_call: types.CallbackQuery, _widget: Any, manager: DialogManager, item_id: str):
@@ -112,15 +114,12 @@ async def currency_selected(_call: types.CallbackQuery, _widget: Any, manager: D
 
 
 async def delete_tag(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
-    manager.current_context().widget_data.pop('tag', None)
-
-
-def tag_is_empty(_data: Dict, _widget: Whenable, manager: DialogManager):
-    return manager.current_context().widget_data.get('tag') is None
+    manager.current_context().widget_data.get("tags").pop()
 
 
 def tag_exist(_data: Dict, _widget: Whenable, manager: DialogManager):
-    return manager.current_context().widget_data.get('tag') is not None
+    tags: list = manager.current_context().widget_data.get('tags')
+    return tags is not None and len(tags) > 0
 
 
 # Restrictions
@@ -165,6 +164,7 @@ class RepeatedNumberError(Exception):
 
 
 async def contact_validator(message: types.Message, dialog: ManagedDialogAdapterProto, manager: DialogManager):
+    contact_limit: int = manager.current_context().widget_data.get('contact_limit')
     try:
         phone_number = message.text
         contact_data = manager.current_context().widget_data.setdefault('contacts', [])
@@ -177,8 +177,12 @@ async def contact_validator(message: types.Message, dialog: ManagedDialogAdapter
         if phonenumbers.is_possible_number(parsed_number):
             # deep check whether the phone number is invalid
             if phonenumbers.is_valid_number(parsed_number):
-                contact_data.append(phone_number.replace(" ", ""))
-                await dialog.next()
+                if len(contact_data) < contact_limit:
+                    contact_data.append(phone_number.replace(" ", ""))
+                else:
+                    contact_data[-1] = phone_number.replace(" ", "")
+                if len(contact_data) == contact_limit:
+                    await dialog.next()
             else:
                 raise ValueError
         else:
@@ -197,11 +201,15 @@ async def contact_validator(message: types.Message, dialog: ManagedDialogAdapter
 
 
 async def pic_validator(message: types.Message, _dialog: ManagedDialogAdapterProto, manager: DialogManager):
+    pic_limit: int = manager.current_context().widget_data.get('pic_limit')
     match message.content_type:
         case types.ContentType.PHOTO:
             photo = message.photo[-1]
             photos_data = manager.current_context().widget_data.setdefault('photos_ids', [])
-            photos_data.append(photo.file_id)
+            if len(photos_data) < pic_limit:
+                photos_data.append(photo.file_id)
+            else:
+                photos_data[-1] = photo.file_id
         case _:
             manager.show_mode = ShowMode.EDIT
             await message.answer("Вы ввели не валидную картинку! Попробуйте еще раз.")
@@ -228,25 +236,35 @@ async def check_required_fields(call: types.CallbackQuery, _button: Button, mana
     state = manager.current_context().state.state.split(':')[0].lower()
 
     if REQUIRED_FIELDS.get(state).issubset(widget_data.keys()):
-        await manager.switch_to(to_state.get(state).confirm)
+        state_class = manager.current_context().state.state.split(":")[0]
+        widget_data: dict = manager.current_context().widget_data
+
+        data: dict = copy.deepcopy(widget_data)
+        data.pop('currency_code', None)
+        data.pop('sg_tags', None)
+        data.update({"state_class": state_class})
+
+        await manager.start(ConfirmAd.confirm, data=data)
     else:
         await call.answer("Вы не заполнили все обязательные поля.")
 
 
-def tag_buttons():
-    buttons = Group(
-        Button(text=Const("#️⃣Детский мир"), id="childs_world", on_click=add_tag),
-        Button(text=Const("#️⃣Недвижимость"), id="real_estate", on_click=add_tag),
-        Button(text=Const("#️⃣Транспорт"), id="transport", on_click=add_tag),
-        Button(text=Const("#️⃣Работа"), id="work", on_click=add_tag),
-        Button(text=Const("#️⃣Животные"), id="animals", on_click=add_tag),
-        Button(text=Const("#️⃣Дом и сад"), id="house_garden", on_click=add_tag),
-        Button(text=Const("#️⃣Электроника"), id="electronics", on_click=add_tag),
-        Button(text=Const("#️⃣Услуги"), id="services", on_click=add_tag),
-        Button(text=Const("#️⃣Мода и стиль"), id="fashion_style", on_click=add_tag),
-        Button(text=Const("#️⃣Спорт"), id="sport", on_click=add_tag),
-        width=2,
-        when=tag_is_empty
-    )
+async def show_preview(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
+    state_class = manager.current_context().state.state.split(":")[0]
+    widget_data: dict = manager.current_context().widget_data
+    print(0, widget_data)
 
-    return buttons
+    data: dict = copy.deepcopy(widget_data)
+    data.pop('currency_code', None)
+    data.pop('sg_tags', None)
+    data.update({"state_class": state_class})
+
+    print(1, widget_data)
+
+    await manager.start(state=Preview.preview, data=data)
+
+
+async def process_result(_start_data: Data, result: Any, manager: DialogManager):
+    if result:
+        print(2, result)
+        manager.current_context().widget_data.update(**result)

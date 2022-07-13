@@ -1,8 +1,8 @@
-"""add relations
+"""initial
 
-Revision ID: 88e09183a8a4
+Revision ID: 055cb21adff8
 Revises: 
-Create Date: 2022-07-11 17:45:34.262866
+Create Date: 2022-07-12 10:55:38.844726
 
 """
 from alembic import op
@@ -14,7 +14,7 @@ from sqlalchemy import orm
 from tgbot.models.restriction import Restriction
 from tgbot.models.tag import Tag
 
-revision = '88e09183a8a4'
+revision = '055cb21adff8'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -81,7 +81,7 @@ def upgrade() -> None:
     bind = op.get_bind()
     session = orm.Session(bind=bind)
 
-    default_tags = ['продам', 'куплю', 'услуги', 'перевозки']
+    default_tags = ('продам', 'куплю', 'услуги', 'перевозки')
 
     default_restrictions = ((1, "tag", "Теги", 2),
                             (2, "contact", "Контакты", 2),

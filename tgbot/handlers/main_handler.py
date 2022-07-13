@@ -22,7 +22,7 @@ async def get_main_text(dialog_manager: DialogManager, **_kwargs):
 
 
 def is_owner(data: Dict, _widget: Whenable, manager: DialogManager):
-    if user := manager.data.get("user").get("user"):
+    if user := manager.data.get("user"):
         return user.role == 'owner'
     else:
         return data.get("user_role") == 'owner'

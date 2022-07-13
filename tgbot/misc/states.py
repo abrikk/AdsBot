@@ -23,7 +23,6 @@ class Buy(StatesGroup):
     title = State()
     photo = State()
 
-    preview = State()
     confirm = State()
     done = State()
 
@@ -37,6 +36,12 @@ class Sell(StatesGroup):
     title = State()
     photo = State()
 
-    preview = State()
     confirm = State()
-    done = State()
+
+
+class Preview(StatesGroup):
+    preview = State()
+
+
+class ConfirmAd(StatesGroup):
+    confirm = State()
