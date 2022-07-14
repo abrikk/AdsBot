@@ -20,6 +20,11 @@ class DBCommands:
         request = await self.session.execute(sql)
         return request.scalars().first()
 
+    async def get_user_post_limit(self, user_id: int):
+        sql = select(User.post_limit).where(User.user_id == user_id)
+        request = await self.session.execute(sql)
+        return request.scalars().first()
+
     async def update_user_role(self, user_id: int, role: str):
         sql = update(User).where(User.user_id == user_id).values(role=role)
         result = await self.session.execute(sql)
@@ -79,5 +84,10 @@ class DBCommands:
 
     async def get_restriction(self, uid: str):
         sql = select(Restriction).where(Restriction.uid == uid)
+        request = await self.session.execute(sql)
+        return request.scalars().first()
+
+    async def get_value_of_restriction(self, uid: str):
+        sql = select(Restriction.number).where(Restriction.uid == uid)
         request = await self.session.execute(sql)
         return request.scalars().first()

@@ -7,7 +7,6 @@ from aiogram_dialog.widgets.when import Whenable
 
 from tgbot.misc.states import Main, Buy, Sell, AdminPanel
 from tgbot.misc.switch_inline_query_current_chat import SwitchInlineQueryCurrentChat
-from tgbot.models.user import User
 
 
 async def get_main_text(dialog_manager: DialogManager, **_kwargs):
