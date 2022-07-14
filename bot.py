@@ -7,6 +7,7 @@ from aiogram.contrib.fsm_storage.redis import RedisStorage2
 from aiogram.types import AllowedUpdates
 from aiogram_dialog import DialogRegistry
 
+from schedulers.base import setup_scheduler
 from setup import register_all_dialogs, register_all_handlers
 from tgbot.config import load_config, Config
 from tgbot.filters.admin import AdminFilter
@@ -39,7 +40,7 @@ async def main():
     config: Config = load_config(".env")
 
     if config.tg_bot.use_redis:
-        storage = RedisStorage2(host="redis")
+        storage = RedisStorage2(host=config.redis_config.host)
     else:
         storage = MemoryStorage()
 
@@ -47,6 +48,10 @@ async def main():
     dp = Dispatcher(bot, storage=storage)
     sessionmaker = await create_db_session(config)
     registry = DialogRegistry(dp)
+
+    scheduler = setup_scheduler(bot=bot, config=config, storage=storage, session=sessionmaker)
+
+    bot["scheduler"] = scheduler
 
     await on_startup_notify(bot, config)
     await set_default_commands(bot, config)

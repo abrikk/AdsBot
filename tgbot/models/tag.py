@@ -31,4 +31,4 @@ class Tag(Base):
     __mapper_args__ = {"eager_defaults": True}
 
     def __repr__(self):
-        return f'Management (ID: {self.common_id} - {[self.__dict__]})'
+        return f'Tag (ID: {self.tag_name} - {[self.__dict__]})'

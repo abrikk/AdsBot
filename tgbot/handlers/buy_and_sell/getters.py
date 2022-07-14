@@ -9,6 +9,7 @@ from tgbot.config import Config
 from tgbot.handlers.buy_and_sell.form import get_active_section, get_current_file_id
 from tgbot.misc.ad import SalesAd, PurchaseAd
 from tgbot.misc.states import Main
+from tgbot.models.ad import PostAd
 from tgbot.models.restriction import Restriction
 from tgbot.services.db_commands import DBCommands
 
@@ -27,7 +28,6 @@ async def get_form_text(dialog_manager: DialogManager, **_kwargs):
     widget_data.update(limits)
 
     data = copy.deepcopy(widget_data)
-    data.pop('currency_code', None)
     data.pop('sg_tags', None)
 
     state: list[str] = dialog_manager.current_context().state.state.split(":")
@@ -50,7 +50,7 @@ async def get_final_text(dialog_manager: DialogManager, **_kwargs):
     data.pop('photos_len', None)
 
     ad = SalesAd(**data) if state_class == "Sell" else PurchaseAd(**data)
-
+    print("as dict", ad.__dict__())
     if ad.photos_ids:
         current_page = start_data.setdefault('current_page', 1)
     else:
@@ -70,19 +70,24 @@ async def get_final_text(dialog_manager: DialogManager, **_kwargs):
 async def on_confirm(call: types.CallbackQuery, _button: Button, manager: DialogManager):
     obj = manager.event
     bot: Bot = obj.bot
+    session = manager.data.get("session")
+    db: DBCommands = manager.data.get("db_commands")
     start_data = manager.current_context().start_data
+
     state_class: str = start_data.get("state_class")
     config: Config = manager.data.get("config")
 
     data = copy.deepcopy(start_data)
     data.pop("state_class", None)
-    data.pop('currency_code', None)
     data.pop('current_page', None)
     data.pop('photos_len', None)
     data.update({"mention": obj.from_user.get_mention()})
 
     ad = SalesAd(**data) if state_class == "Sell" else PurchaseAd(**data)
-
+    ad.tags = await db.get_tags_by_name(start_data.get("tags"))
+    print(ad)
+    print(ad.tags)
+    print("as dict 2", ad.__dict__())
     album = MediaGroup()
 
     if ad.photos_ids:
@@ -91,11 +96,23 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
 
         album.attach_photo(photo=ad.photos_ids[-1], caption=ad.post())
 
-        await bot.send_media_group(chat_id=config.tg_bot.channel_id,
-                                   media=album)
+        post = await bot.send_media_group(chat_id=config.tg_bot.channel_id,
+                                          media=album)
     else:
-        await bot.send_message(chat_id=config.tg_bot.channel_id,
-                               text=ad.post())
+        post = await bot.send_message(chat_id=config.tg_bot.channel_id,
+                                      text=ad.post())
+
+
+
+    post_ad: PostAd = PostAd(
+        **ad.__dict__(),
+        post_id=post[0].message_id,
+        user_id=obj.from_user.id
+    )
+    print("post_ad", post_ad)
+
+    session.add(post_ad)
+    session.commit()
 
     await call.answer("Объявление было успешно опубликовано в канале!")
     await manager.start(Main.main, mode=StartMode.RESET_STACK)
@@ -103,7 +120,7 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
 
 async def get_tags_data(dialog_manager: DialogManager, **_kwargs):
     state = dialog_manager.current_context().state.state.split(":")[0]
-    user_tags = dialog_manager.current_context().widget_data.get('tags', [])
+    user_tags: list[str] = dialog_manager.current_context().widget_data.get('tags', [])
     db: DBCommands = dialog_manager.data.get("db_commands")
     restriction: Restriction = await db.get_restriction("tag")
 
@@ -115,10 +132,10 @@ async def get_tags_data(dialog_manager: DialogManager, **_kwargs):
         tags.remove("продам")
 
     for tag in user_tags:
-        tags.remove(tag)
+        tags.remove(tag.removeprefix("#️⃣"))
 
     tag_dict: dict = {
-        "tags_data": [("#️⃣" + tag, ) for tag in tags],
+        "tags_data": [("#️⃣" + tag,) for tag in tags],
         "show_scroll": len(user_tags) < restriction.number and len(tags) > 8,
         "show_tags": len(user_tags) < restriction.number and len(tags) <= 8,
     }

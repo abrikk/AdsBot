@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import Optional
 
 import flag
@@ -18,6 +18,7 @@ class Ad(ABC):
     photos_ids: list[str] = field(default_factory=list)
 
     currency: str = "₴"
+    currency_code: str = field(default_factory=str)
     mention: str = field(default_factory=str)
 
     tag_limit: int = field(default_factory=int)
@@ -58,7 +59,18 @@ class Ad(ABC):
         return ", ".join(list_of_numbers)
 
     def make_tags(self) -> str:
-        return ", ".join(["#" + tag for tag in self.tags])
+        return ", ".join(["#" + tag. for tag in self.tags])
+
+    def __dict__(self) -> dict:
+        temp_dict = asdict(self)
+        temp_dict.pop('state')
+        temp_dict.pop('currency')
+        temp_dict.pop('mention')
+        temp_dict.pop('tag_limit')
+        temp_dict.pop('contact_limit')
+        temp_dict.pop('pic_limit')
+        temp_dict.pop('post_limit')
+        return temp_dict
 
 
 @dataclass

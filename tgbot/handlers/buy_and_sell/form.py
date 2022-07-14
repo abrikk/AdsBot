@@ -103,7 +103,7 @@ async def add_tag(_call: types.CallbackQuery, _widget: ManagedWidgetAdapter[Sele
                   tag: str):
     tag_limit: int = manager.current_context().widget_data.get('tag_limit')
     tags_data = manager.current_context().widget_data.setdefault("tags", [])
-    tags_data.append(tag)
+    tags_data.append(tag.removeprefix('#️⃣'))
     if tag_limit == len(tags_data):
         await manager.dialog().next()
 
@@ -238,9 +238,8 @@ async def check_required_fields(call: types.CallbackQuery, _button: Button, mana
     if REQUIRED_FIELDS.get(state).issubset(widget_data.keys()):
         state_class = manager.current_context().state.state.split(":")[0]
         widget_data: dict = manager.current_context().widget_data
-
+        print("widget data", widget_data)
         data: dict = copy.deepcopy(widget_data)
-        data.pop('currency_code', None)
         data.pop('sg_tags', None)
         data.update({"state_class": state_class})
 

@@ -91,3 +91,10 @@ class DBCommands:
         sql = select(Restriction.number).where(Restriction.uid == uid)
         request = await self.session.execute(sql)
         return request.scalars().first()
+
+    async def get_tags_by_name(self, tag_list: list[str]):
+        sql = select(Tag).where(
+            Tag.tag_name.in_(tag_list)
+        ).order_by(Tag.created_at)
+        request = await self.session.execute(sql)
+        return request.scalars().all()
