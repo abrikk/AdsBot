@@ -36,15 +36,39 @@ async def get_form_text(dialog_manager: DialogManager, **_kwargs):
     else:
         ad = PurchaseAd(state=state[-1], **data)
 
-    return {"form_text": ad.to_text(), "page": get_active_section(state[-1])}
+    return {
+        "form_text": ad.to_text(),
+        "page": get_active_section(state[-1]),
+        "show_checkbox": isinstance(ad, SalesAd)
+    }
 
 
 async def get_final_text(dialog_manager: DialogManager, **_kwargs):
     start_data: dict = dialog_manager.current_context().start_data
     current_state: str = dialog_manager.current_context().state.state.split(":")[-1]
     state_class: str = start_data.get("state_class")
+    print(state_class)
+    print(start_data)
+    if post_id := start_data.get("post_id"):
+        session = dialog_manager.data.get("session")
+        post_ad: PostAd = await session.get(PostAd, post_id)
 
-    data: dict = copy.deepcopy(start_data)
+        data: dict = {
+            "tags": [tag.tag_name for tag in post_ad.tags],
+            "description": post_ad.description,
+            "contacts": post_ad.contacts.split(","),
+            "price": post_ad.price,
+            "currency_code": post_ad.currency_code,
+            "negotiable": post_ad.negotiable,
+            "title": post_ad.title,
+            "photos_ids": post_ad.photos_ids.split(","),
+        }
+        data.update(start_data)
+        data.pop("post_id", None)
+        print("dataaa", data)
+    else:
+        data: dict = copy.deepcopy(start_data)
+
     data.pop("state_class", None)
     data.pop('current_page', None)
     data.pop('photos_len', None)
@@ -123,9 +147,11 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
 async def get_tags_data(dialog_manager: DialogManager, **_kwargs):
     print(dialog_manager.current_context().start_data)
 
-    state = dialog_manager.current_context().state.state.split(":")[0]
-    user_tags: list[str] = dialog_manager.current_context().widget_data.get('tags', [])
+    state = dialog_manager.current_context().state.state.split(":")
+    state = dialog_manager.current_context().widget_data.get('state', state)[0]
 
+    user_tags: list[str] = dialog_manager.current_context().widget_data.get('tags', [])
+    print("state", state)
     db: DBCommands = dialog_manager.data.get("db_commands")
     restriction: Restriction = await db.get_restriction("tag")
     # if start_data := dialog_manager.current_context().start_data:

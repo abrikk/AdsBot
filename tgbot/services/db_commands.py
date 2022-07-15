@@ -112,3 +112,8 @@ class DBCommands:
         sql = select(PostAd).where(PostAd.post_id == post_id)
         request = await self.session.execute(sql)
         return request.scalars().first()
+
+    async def get_post_type(self, post_id: int):
+        sql = select(PostAd.post_type).where(PostAd.post_id == post_id)
+        request = await self.session.execute(sql)
+        return request.scalars().first()

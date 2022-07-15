@@ -1,5 +1,3 @@
-import asyncio
-
 from aiogram import types
 from aiogram.types import MediaGroup
 from aiogram_dialog import Dialog, Window, DialogManager, StartMode, ShowMode
@@ -7,7 +5,7 @@ from aiogram_dialog.widgets.kbd import Start, Button
 from aiogram_dialog.widgets.text import Format, Const
 
 from tgbot.misc.ad import SalesAd, PurchaseAd
-from tgbot.misc.states import ShowMyAd, MyAds, Edit
+from tgbot.misc.states import ShowMyAd, MyAds, EditBuy, EditSell
 from tgbot.models.post_ad import PostAd
 from tgbot.services.db_commands import DBCommands
 
@@ -59,8 +57,10 @@ async def get_show_my_ad_text(dialog_manager: DialogManager, **_kwargs):
 async def start_editing_ad(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
     start_data = manager.current_context().start_data
     post_id = int(start_data.get("post_id"))
-    print(1)
-    await manager.start(Edit.tags, data={"post_id": post_id}, mode=StartMode.RESET_STACK)
+    db: DBCommands = manager.data.get("db_commands")
+    post_type: str = await db.get_post_type(post_id)
+    to_state = EditSell if post_type == "sell" else EditBuy
+    await manager.start(to_state.tags, data={"post_id": post_id}, mode=StartMode.RESET_STACK)
 
 
 show_my_ad_dialog = Dialog(

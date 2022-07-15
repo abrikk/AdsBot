@@ -11,7 +11,7 @@ from aiogram_dialog.widgets.managed import ManagedWidgetAdapter
 from aiogram_dialog.widgets.text import Format, Const
 from aiogram_dialog.widgets.when import Whenable
 
-from tgbot.misc.states import Sell, Buy, Preview, ConfirmAd, Main
+from tgbot.misc.states import Sell, Buy, Preview, ConfirmAd, Main, MyAds, ShowMyAd, EditSell, EditBuy
 from tgbot.models.post_ad import PostAd
 from tgbot.services.db_commands import DBCommands
 
@@ -22,7 +22,9 @@ REQUIRED_FIELDS = {
 
 to_state: dict = {
     "sell": Sell,
-    "buy": Buy
+    "buy": Buy,
+    "editsell": EditSell,
+    "editbuy": EditBuy
 }
 
 
@@ -120,9 +122,27 @@ async def delete_tag(_call: types.CallbackQuery, _button: Button, manager: Dialo
     manager.current_context().widget_data.get("tags").pop()
 
 
+async def delete_contact(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
+    manager.current_context().widget_data.get("contacts").pop()
+
+
+async def delete_pic(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
+    manager.current_context().widget_data.get("photos_ids").pop()
+
+
 def tag_exist(_data: Dict, _widget: Whenable, manager: DialogManager):
     tags: list = manager.current_context().widget_data.get('tags')
     return tags is not None and len(tags) > 0
+
+
+def contact_exist(_data: Dict, _widget: Whenable, manager: DialogManager):
+    contacts: list = manager.current_context().widget_data.get('contacts')
+    return contacts is not None and len(contacts) > 0
+
+
+def pic_exist(_data: Dict, _widget: Whenable, manager: DialogManager):
+    photos_ids: list = manager.current_context().widget_data.get('photos_ids')
+    return photos_ids is not None and len(photos_ids) > 0
 
 
 # Restrictions
@@ -227,9 +247,9 @@ async def set_default(_, dialog_manager: DialogManager):
 async def set_edit_default(_, dialog_manager: DialogManager):
     session = dialog_manager.data.get('session')
     db: DBCommands = dialog_manager.data.get('db_commands')
+
     post_ad: PostAd = await session.get(PostAd, int(dialog_manager.current_context().start_data.get('post_id')))
-    dialog_manager.current_context().widget_data['tags'] = [tag.tag_name for tag in post_ad.tags]
-    await dialog_manager.dialog().find('currency_code').set_checked(event="", item_id=post_ad.currency_code)
+
     tag, contact, pic, post = await db.get_values_of_restrictions()
     limits: dict = {
         "tag_limit": tag,
@@ -238,9 +258,19 @@ async def set_edit_default(_, dialog_manager: DialogManager):
         "post_limit": post
     }
 
+    dialog_manager.current_context().widget_data['state'] = [
+        post_ad.post_type.capitalize(),
+        dialog_manager.current_context().state.state.split(":")[-1]
+    ]
+    dialog_manager.current_context().widget_data['post_id'] = post_ad.post_id
+    dialog_manager.current_context().widget_data['tags'] = [tag.tag_name for tag in post_ad.tags]
+    dialog_manager.current_context().widget_data['contacts'] = post_ad.contacts.split(',')
+    dialog_manager.current_context().widget_data['photos_ids'] = post_ad.photos_ids.split(',')
     dialog_manager.current_context().widget_data.update(limits)
-    # ToDo deal with bug
-    # await dialog_manager.dialog().find('negotiable').set_checked(event=dialog_manager.event, checked=post_ad.negotiable)
+
+    # ToDo deal with bug with checkbox
+    await dialog_manager.dialog().find('currency_code').set_checked(event="", item_id=post_ad.currency_code)
+    await dialog_manager.dialog().find('negotiable').set_checked(event=dialog_manager.event, checked=post_ad.negotiable)
 
 
 async def get_currency_data(**_kwargs):
@@ -253,21 +283,52 @@ async def get_currency_data(**_kwargs):
     return {'currencies': currencies}
 
 
-async def check_required_fields(call: types.CallbackQuery, _button: Button, manager: DialogManager):
-    widget_data = manager.current_context().widget_data
+async def check_required_fields(call: types.CallbackQuery, button: Button, manager: DialogManager):
+    widget_data: dict = manager.current_context().widget_data
     state = manager.current_context().state.state.split(':')[0].lower()
-
-    if REQUIRED_FIELDS.get(state).issubset(widget_data.keys()):
-        state_class = manager.current_context().state.state.split(":")[0]
-        widget_data: dict = manager.current_context().widget_data
-        print("widget data", widget_data)
-        data: dict = copy.deepcopy(widget_data)
-        data.pop('sg_tags', None)
-        data.update({"state_class": state_class})
-
-        await manager.start(ConfirmAd.confirm, data=data)
+    print(button.widget_id)
+    if button.widget_id == 'post':
+        if REQUIRED_FIELDS.get(state).issubset(widget_data.keys()):
+            state_class = manager.current_context().state.state.split(":")[0]
+            print("widget data", widget_data)
+            data: dict = copy.deepcopy(widget_data)
+            data.pop('sg_tags', None)
+            data.update({"state_class": state_class})
+            await manager.start(ConfirmAd.confirm, data=data)
+        else:
+            await call.answer("Вы не заполнили все обязательные поля.")
     else:
-        await call.answer("Вы не заполнили все обязательные поля.")
+        start_data = manager.current_context().start_data
+        db: DBCommands = manager.data.get("db_commands")
+        session = manager.data.get("session")
+        post_id = int(start_data.get("post_id"))
+        post_ad: PostAd = await session.get(PostAd, post_id)
+        items_to_pop = ['post_id', 'currency', 'sg_tags', 'state_class', 'tag_limit', 'contact_limit', 'pic_limit', 'post_limit']
+        for item in items_to_pop:
+            widget_data.pop(item, None)
+        await update_ad(post_ad, widget_data, db)
+        await session.commit()
+        await call.answer("Объявление обновлено!")
+        await manager.start(state=ShowMyAd.true, data={"post_id": post_id}, mode=StartMode.RESET_STACK)
+
+
+async def update_ad(post_ad: PostAd, dict_to_update: dict, db: DBCommands):
+    if dict_to_update.get("tags") is not None:
+        post_ad.tags = await db.get_tags_by_name(dict_to_update["tags"])
+    if dict_to_update.get("description") is not None:
+        post_ad.description = dict_to_update["description"]
+    if dict_to_update.get("contacts") is not None:
+        post_ad.contacts = ','.join(dict_to_update["contacts"])
+    if dict_to_update.get("price") is not None:
+        post_ad.price = dict_to_update["price"]
+    if dict_to_update.get("currency_code") is not None:
+        post_ad.currency_code = dict_to_update["currency_code"]
+    if dict_to_update.get("negotiable") is not None:
+        post_ad.negotiable = dict_to_update["negotiable"]
+    if dict_to_update.get("title") is not None:
+        post_ad.title = dict_to_update["title"]
+    if dict_to_update.get("photos_ids") is not None:
+        post_ad.photos_ids = ','.join(dict_to_update["photos_ids"])
 
 
 async def show_preview(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
@@ -279,6 +340,7 @@ async def show_preview(_call: types.CallbackQuery, _button: Button, manager: Dia
     data.pop('currency_code', None)
     data.pop('sg_tags', None)
     data.update({"state_class": state_class})
+    print(22333, data)
 
     print(1, widget_data)
 
@@ -309,7 +371,7 @@ def get_widgets(where: str = None):
             Start(
                 text=Const("🔚 Назад"),
                 id="back_to_main",
-                state=Main.main,
+                state=MyAds.show if where == 'edit' else Main.main,
                 mode=StartMode.RESET_STACK
             ),
             Button(

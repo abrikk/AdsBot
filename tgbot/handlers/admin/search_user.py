@@ -13,7 +13,6 @@ async def default_query(query: types.InlineQuery, db_commands):
         like=query.query.partition(" ")[-1],
         offset=query_offset)
     )
-    print(users)
 
     results = [
         types.InlineQueryResultArticle(

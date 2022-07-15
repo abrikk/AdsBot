@@ -19,6 +19,7 @@ class Ad(ABC):
 
     currency_code: str = field(default_factory=str)
     currency: str = {'USD': '$', 'EUR': '€', 'RUB': '₽', 'UAH': '₴'}.get(currency_code, "₴")
+    negotiable: bool = False
     mention: str = field(default_factory=str)
 
     tag_limit: int = field(default_factory=int)
@@ -64,8 +65,6 @@ class Ad(ABC):
 
 @dataclass
 class SalesAd(Ad):
-    negotiable: bool = False
-
     def to_text(self) -> str:
         description: str = self.description or '➖'
         price: float | int | str = self.price or '➖'

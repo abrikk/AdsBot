@@ -3,46 +3,69 @@ import operator
 from aiogram import types
 from aiogram_dialog import Window, Dialog
 from aiogram_dialog.widgets.input import MessageInput, TextInput
-from aiogram_dialog.widgets.kbd import Select, ScrollingGroup, Group, Button, Radio, Checkbox
+from aiogram_dialog.widgets.kbd import Select, ScrollingGroup, Group, Button, Radio
 from aiogram_dialog.widgets.text import Format, Const
 
 from tgbot.handlers.buy_and_sell.form import price_validator, change_page, currency_selected, \
     get_currency_data, contact_validator, add_tag, tag_exist, delete_tag, fixed_size_1024, \
-    invalid_input, fixed_size_64, pic_validator, set_edit_default, get_widgets
+    invalid_input, fixed_size_64, pic_validator, set_edit_default, get_widgets, pic_exist, delete_pic, contact_exist, \
+    delete_contact
 from tgbot.handlers.buy_and_sell.getters import get_tags_data
 from tgbot.handlers.edit_buy_and_sell.edit_ad import get_edit_text
-from tgbot.misc.states import Edit
+from tgbot.misc.states import EditBuy, EditSell
+from tgbot.misc.temp_checkbox import Checkbox
+
+to_state: dict = {
+    "sell": EditSell,
+    "buy": EditBuy,
+}
 
 
-def get_edit_dialog() -> Dialog:
-    # def get_widgets():
-    #     buttons = (
-    #         Format(text="{form_text}", when="form_text"),
-    #         Row(
-    #             Button(text=Const("<<"), id="left", on_click=change_page),
-    #             Button(text=Format(text="{page}"), id="page"),
-    #             Button(text=Const(">>"), id="right", on_click=change_page)
-    #         ),
-    #         Row(
-    #             Start(
-    #                 text=Const("🔚 Назад"),
-    #                 id="back_to_main",
-    #                 state=Main.main,
-    #                 mode=StartMode.RESET_STACK
-    #             ),
-    #             Button(
-    #                 text=Const("👁"),
-    #                 id="preview",
-    #                 on_click=show_preview
-    #             ),
-    #             Button(
-    #                 text=Const("Сохранить"),
-    #                 id="save",
-    #                 on_click=check_required_fields
-    #             )
-    #         )
-    #     )
-    #     return buttons
+def get_edit_dialog(where: str) -> Dialog:
+    order_windows: list = [
+        Window(
+            Checkbox(
+                checked_text=Const("Торг уместен: Да ✅"),
+                unchecked_text=Const("Торг уместен: Нет ❌"),
+                id="negotiable",
+                default=False,
+                when="show_checkbox"
+            ),
+            Radio(
+                checked_text=Format("✔️ {item[0]}"),
+                unchecked_text=Format("{item[0]}"),
+                id="currency_code",
+                item_id_getter=operator.itemgetter(1),
+                items="currencies",
+                on_click=currency_selected
+            ),
+            *get_widgets(where='edit'),
+            MessageInput(
+                func=price_validator,
+                content_types=types.ContentType.TEXT
+            ),
+            state=to_state.get(where).price,
+            getter=[get_edit_text, get_currency_data]
+        ),
+        Window(
+            *get_widgets(),
+            MessageInput(
+                func=contact_validator,
+                content_types=types.ContentType.TEXT
+            ),
+            Button(
+                text=Const("Удалить контакт"),
+                id="delete_contact",
+                when=contact_exist,
+                on_click=delete_contact
+            ),
+            state=to_state.get(where).contact,
+            getter=[get_edit_text]
+        ),
+    ]
+
+    if where == "buy":
+        order_windows = order_windows[::-1]
 
     dialog = Dialog(
         Window(
@@ -78,7 +101,7 @@ def get_edit_dialog() -> Dialog:
                 on_click=delete_tag
             ),
             *get_widgets(where='edit'),
-            state=Edit.tags,
+            state=to_state.get(where).tags,
             getter=[get_edit_text, get_tags_data]
         ),
         Window(
@@ -89,42 +112,10 @@ def get_edit_dialog() -> Dialog:
                 on_error=invalid_input,
                 on_success=change_page
             ),
-            state=Edit.description,
+            state=to_state.get(where).description,
             getter=[get_edit_text]
         ),
-        Window(
-            *get_widgets(where='edit'),
-            MessageInput(
-                func=contact_validator,
-                content_types=types.ContentType.TEXT
-            ),
-            state=Edit.contact,
-            getter=[get_edit_text]
-        ),
-        Window(
-            Checkbox(
-                checked_text=Const("Торг уместен: Да ✅"),
-                unchecked_text=Const("Торг уместен: Нет ❌"),
-                id="negotiable",
-                default=False,
-                when="show_checkbox"
-            ),
-            Radio(
-                checked_text=Format("✔️ {item[0]}"),
-                unchecked_text=Format("{item[0]}"),
-                id="currency_code",
-                item_id_getter=operator.itemgetter(1),
-                items="currencies",
-                on_click=currency_selected
-            ),
-            *get_widgets(where='edit'),
-            MessageInput(
-                func=price_validator,
-                content_types=types.ContentType.TEXT
-            ),
-            state=Edit.price,
-            getter=[get_edit_text, get_currency_data]
-        ),
+        *order_windows,
         Window(
             *get_widgets(where='edit'),
             TextInput(
@@ -132,7 +123,7 @@ def get_edit_dialog() -> Dialog:
                 type_factory=fixed_size_64,
                 on_error=invalid_input,
                 on_success=change_page),
-            state=Edit.title,
+            state=to_state.get(where).title,
             getter=[get_edit_text]
         ),
         Window(
@@ -141,7 +132,13 @@ def get_edit_dialog() -> Dialog:
                 pic_validator,
                 content_types=[types.ContentType.ANY]
             ),
-            state=Edit.photo,
+            Button(
+                text=Const("Удалить фото"),
+                id="delete_pic",
+                when=pic_exist,
+                on_click=delete_pic
+            ),
+            state=to_state.get(where).photo,
             getter=[get_edit_text]
         ),
 
@@ -151,4 +148,5 @@ def get_edit_dialog() -> Dialog:
     return dialog
 
 
-edit_ad_dialog = get_edit_dialog()
+edit_sell_ad_dialog = get_edit_dialog(where='sell')
+edit_buy_ad_dialog = get_edit_dialog(where='buy')

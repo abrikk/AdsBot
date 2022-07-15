@@ -4,7 +4,7 @@ from aiogram_dialog import DialogRegistry
 from tgbot.handlers.admin.admin_panel import admin_dialog
 from tgbot.handlers.admin.show_user import show_user_dialog, register_show_product
 from tgbot.handlers.buy_and_sell.dialogs import sell_dialog, buy_dialog, preview_dialog, confirm_dialog
-from tgbot.handlers.edit_buy_and_sell.dialogs import edit_ad_dialog
+from tgbot.handlers.edit_buy_and_sell.dialogs import edit_sell_ad_dialog, edit_buy_ad_dialog
 from tgbot.handlers.edit_buy_and_sell.my_ads import my_ads_dialog
 from tgbot.handlers.edit_buy_and_sell.show_my_ad import show_my_ad_dialog
 from tgbot.handlers.main_handler import main_dialog
@@ -26,7 +26,8 @@ def register_all_dialogs(dialog_registry: DialogRegistry):
 
     dialog_registry.register(my_ads_dialog)
     dialog_registry.register(show_my_ad_dialog)
-    dialog_registry.register(edit_ad_dialog)
+    dialog_registry.register(edit_sell_ad_dialog)
+    dialog_registry.register(edit_buy_ad_dialog)
 
 
 def register_all_handlers(dp: Dispatcher):

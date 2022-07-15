@@ -50,7 +50,7 @@ main_dialog = Dialog(
             )
         ),
         Start(
-            text=Const("Мои объявления"),
+            text=Const("🌀 Мои объявления"),
             id="my_ads",
             state=MyAds.show
         ),

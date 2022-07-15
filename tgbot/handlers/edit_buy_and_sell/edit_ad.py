@@ -8,13 +8,14 @@ from tgbot.services.db_commands import DBCommands
 
 
 async def get_edit_text(dialog_manager: DialogManager, **_kwargs):
-    print(22222222)
     start_data = dialog_manager.current_context().start_data
     widget_data = dialog_manager.current_context().widget_data
-    print(widget_data)
+
     state = dialog_manager.current_context().state.state.split(":")[-1]
+
     session = dialog_manager.data.get("session")
     db: DBCommands = dialog_manager.data.get("db_commands")
+
     post_id = int(start_data.get("post_id"))
     post_ad: PostAd = await session.get(PostAd, post_id)
 
@@ -36,8 +37,11 @@ async def get_edit_text(dialog_manager: DialogManager, **_kwargs):
         "title": post_ad.title,
         "photos_ids": post_ad.photos_ids.split(","),
     }
+
     data.update(limits)
     data.update(widget_data)
+    data.update({"state": state})
+    data.pop("post_id", None)
 
     if post_ad.post_type == "sell":
         ad = SalesAd(**data)

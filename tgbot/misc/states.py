@@ -53,7 +53,16 @@ class ShowMyAd(StatesGroup):
     true = State()
 
 
-class Edit(StatesGroup):
+class EditSell(StatesGroup):
+    tags = State()
+    description = State()
+    price = State()
+    contact = State()
+    title = State()
+    photo = State()
+
+
+class EditBuy(StatesGroup):
     tags = State()
     description = State()
     contact = State()
