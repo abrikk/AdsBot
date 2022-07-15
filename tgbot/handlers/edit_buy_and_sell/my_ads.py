@@ -15,11 +15,16 @@ async def get_my_ads_text(dialog_manager: DialogManager, **_kwargs):
     my_ads: list = await db.get_my_ads(user_id=dialog_manager.event.from_user.id)
     print(my_ads)
     text = f"Всего объявлений: {len(my_ads)}\n"
-    print([(desc, str(post_id)) for desc, post_id in my_ads])
+    ads_data: list = list()
+    for title, desc, post_id in my_ads:
+        if title:
+            ads_data.append((title, post_id))
+        else:
+            ads_data.append((desc, post_id))
 
     return {
         "my_ads_text": text,
-        "my_ads_data": [(desc, str(post_id)) for desc, post_id in my_ads],
+        "my_ads_data": ads_data,
         "show_scroll": len(my_ads) > 10,
         "show_my_ads": len(my_ads) <= 10
     }

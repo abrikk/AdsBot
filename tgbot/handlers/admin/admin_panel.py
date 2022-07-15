@@ -124,17 +124,17 @@ admin_dialog = Dialog(
         Column(
             Group(
                 SwitchTo(
-                    text=Const("Ограничения"),
+                    text=Const("⚙️ Ограничения"),
                     id="restrictions",
                     state=AdminPanel.restriction
                 ),
                 SwitchTo(
-                    text=Const("Теги"),
+                    text=Const("#️⃣ Теги"),
                     id="tags",
                     state=AdminPanel.tag,
                 )),
             Start(
-                text=Const("Назад"),
+                text=Const("🔙 Назад"),
                 id="back_to_main",
                 state=Main.main,
                 mode=StartMode.RESET_STACK

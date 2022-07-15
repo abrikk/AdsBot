@@ -102,6 +102,7 @@ class DBCommands:
 
     async def get_my_ads(self, user_id: int):
         sql = select(
+            PostAd.title,
             PostAd.description,
             PostAd.post_id
         ).where(PostAd.user_id == user_id)

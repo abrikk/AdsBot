@@ -56,11 +56,9 @@ def get_current_file_id(photos: list[str] = None, page: int | None = None) -> No
 
 async def on_back(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
     start_data = manager.current_context().start_data
-    print(1, 1, start_data)
-    start_data.pop("state_class", None)
-    start_data.pop('current_page', None)
-    start_data.pop('photos_len', None)
-    print(0, 0, start_data)
+    items_to_pop = ['state_class', 'current_page', 'photos_len']
+    for item in items_to_pop:
+        start_data.pop(item, None)
 
     await manager.done(start_data)
 
@@ -286,26 +284,30 @@ async def get_currency_data(**_kwargs):
 async def check_required_fields(call: types.CallbackQuery, button: Button, manager: DialogManager):
     widget_data: dict = manager.current_context().widget_data
     state = manager.current_context().state.state.split(':')[0].lower()
-    print(button.widget_id)
+
     if button.widget_id == 'post':
         if REQUIRED_FIELDS.get(state).issubset(widget_data.keys()):
             state_class = manager.current_context().state.state.split(":")[0]
-            print("widget data", widget_data)
+
             data: dict = copy.deepcopy(widget_data)
             data.pop('sg_tags', None)
             data.update({"state_class": state_class})
             await manager.start(ConfirmAd.confirm, data=data)
+
         else:
             await call.answer("Вы не заполнили все обязательные поля.")
     else:
         start_data = manager.current_context().start_data
         db: DBCommands = manager.data.get("db_commands")
         session = manager.data.get("session")
+
         post_id = int(start_data.get("post_id"))
         post_ad: PostAd = await session.get(PostAd, post_id)
+
         items_to_pop = ['post_id', 'currency', 'sg_tags', 'state_class', 'tag_limit', 'contact_limit', 'pic_limit', 'post_limit']
         for item in items_to_pop:
             widget_data.pop(item, None)
+
         await update_ad(post_ad, widget_data, db)
         await session.commit()
         await call.answer("Объявление обновлено!")
@@ -334,22 +336,17 @@ async def update_ad(post_ad: PostAd, dict_to_update: dict, db: DBCommands):
 async def show_preview(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
     state_class = manager.current_context().state.state.split(":")[0]
     widget_data: dict = manager.current_context().widget_data
-    print(0, widget_data)
 
     data: dict = copy.deepcopy(widget_data)
     data.pop('currency_code', None)
     data.pop('sg_tags', None)
     data.update({"state_class": state_class})
-    print(22333, data)
-
-    print(1, widget_data)
 
     await manager.start(state=Preview.preview, data=data)
 
 
 async def process_result(_start_data: Data, result: Any, manager: DialogManager):
     if result:
-        print(2, result)
         manager.current_context().widget_data.update(**result)
 
 
