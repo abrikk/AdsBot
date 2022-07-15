@@ -1,5 +1,6 @@
 from sqlalchemy import select, or_, update, and_
 
+from tgbot.models.post_ad import PostAd
 from tgbot.models.restriction import Restriction
 from tgbot.models.tag import Tag
 from tgbot.models.user import User
@@ -98,3 +99,16 @@ class DBCommands:
         ).order_by(Tag.created_at)
         request = await self.session.execute(sql)
         return request.scalars().all()
+
+    async def get_my_ads(self, user_id: int):
+        sql = select(
+            PostAd.description,
+            PostAd.post_id
+        ).where(PostAd.user_id == user_id)
+        request = await self.session.execute(sql)
+        return request.all()
+
+    async def get_posted_ad(self, post_id: int):
+        sql = select(PostAd).where(PostAd.post_id == post_id)
+        request = await self.session.execute(sql)
+        return request.scalars().first()

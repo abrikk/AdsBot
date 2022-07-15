@@ -9,7 +9,7 @@ from aiogram_dialog.widgets.text import Const, Format
 
 from tgbot.handlers.buy_and_sell.form import price_validator, get_currency_data, currency_selected, contact_validator, \
     delete_tag, invalid_input, change_page, fixed_size_1024, fixed_size_64, pic_validator, change_photo, \
-    set_default, check_required_fields, to_state, add_tag, tag_exist, show_preview, on_back, process_result
+    set_default, check_required_fields, to_state, add_tag, tag_exist, show_preview, on_back, process_result, get_widgets
 from tgbot.handlers.buy_and_sell.getters import get_final_text, on_confirm, get_form_text, get_tags_data
 from tgbot.misc.media_widget import DynamicMediaFileId
 from tgbot.misc.states import Main, Preview, ConfirmAd
@@ -17,34 +17,34 @@ from tgbot.misc.states import Main, Preview, ConfirmAd
 
 # getting dialog
 def get_dialog(where: str) -> Dialog:
-    def get_widgets():
-        buttons = (
-            Format(text="{" + f"{where}" + "_text}", when=f"{where}" + "_text"),
-            Row(
-                Button(text=Const("<<"), id="left", on_click=change_page),
-                Button(text=Format(text="{page}"), id="page"),
-                Button(text=Const(">>"), id="right", on_click=change_page)
-            ),
-            Row(
-                Start(
-                    text=Const("🔚 Назад"),
-                    id="back_to_main",
-                    state=Main.main,
-                    mode=StartMode.RESET_STACK
-                ),
-                Button(
-                    text=Const("👁"),
-                    id="preview",
-                    on_click=show_preview
-                ),
-                Button(
-                    text=Const("Опубликовать"),
-                    id="post",
-                    on_click=check_required_fields
-                )
-            )
-        )
-        return buttons
+    # def get_widgets():
+    #     buttons = (
+    #         Format(text="{form_text}", when="form_text"),
+    #         Row(
+    #             Button(text=Const("<<"), id="left", on_click=change_page),
+    #             Button(text=Format(text="{page}"), id="page"),
+    #             Button(text=Const(">>"), id="right", on_click=change_page)
+    #         ),
+    #         Row(
+    #             Start(
+    #                 text=Const("🔚 Назад"),
+    #                 id="back_to_main",
+    #                 state=Main.main,
+    #                 mode=StartMode.RESET_STACK
+    #             ),
+    #             Button(
+    #                 text=Const("👁"),
+    #                 id="preview",
+    #                 on_click=show_preview
+    #             ),
+    #             Button(
+    #                 text=Const("Опубликовать"),
+    #                 id="post",
+    #                 on_click=check_required_fields
+    #             )
+    #         )
+    #     )
+    #     return buttons
 
     if where == "sell":
         price_window = Window(
@@ -131,7 +131,6 @@ def get_dialog(where: str) -> Dialog:
                 width=2,
                 when="show_tags"
             ),
-            # tag_buttons(),
             Button(
                 text=Const("Удалить тег"),
                 id="delete_tag",

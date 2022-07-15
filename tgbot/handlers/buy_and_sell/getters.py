@@ -9,7 +9,7 @@ from tgbot.config import Config
 from tgbot.handlers.buy_and_sell.form import get_active_section, get_current_file_id
 from tgbot.misc.ad import SalesAd, PurchaseAd
 from tgbot.misc.states import Main
-from tgbot.models.ad import PostAd
+from tgbot.models.post_ad import PostAd
 from tgbot.models.restriction import Restriction
 from tgbot.services.db_commands import DBCommands
 
@@ -36,7 +36,7 @@ async def get_form_text(dialog_manager: DialogManager, **_kwargs):
     else:
         ad = PurchaseAd(state=state[-1], **data)
 
-    return {f"{state[0].lower()}_text": ad.to_text(), "page": get_active_section(state[-1])}
+    return {"form_text": ad.to_text(), "page": get_active_section(state[-1])}
 
 
 async def get_final_text(dialog_manager: DialogManager, **_kwargs):
@@ -50,7 +50,6 @@ async def get_final_text(dialog_manager: DialogManager, **_kwargs):
     data.pop('photos_len', None)
 
     ad = SalesAd(**data) if state_class == "Sell" else PurchaseAd(**data)
-    print("as dict", ad.__dict__())
     if ad.photos_ids:
         current_page = start_data.setdefault('current_page', 1)
     else:
@@ -84,10 +83,7 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
     data.update({"mention": obj.from_user.get_mention()})
 
     ad = SalesAd(**data) if state_class == "Sell" else PurchaseAd(**data)
-    ad.tags = await db.get_tags_by_name(start_data.get("tags"))
-    print(ad)
-    print(ad.tags)
-    print("as dict 2", ad.__dict__())
+
     album = MediaGroup()
 
     if ad.photos_ids:
@@ -102,28 +98,41 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
         post = await bot.send_message(chat_id=config.tg_bot.channel_id,
                                       text=ad.post())
 
-
-
     post_ad: PostAd = PostAd(
-        **ad.__dict__(),
         post_id=post[0].message_id,
-        user_id=obj.from_user.id
+        post_type=state_class.lower(),
+        user_id=obj.from_user.id,
+        description=ad.description,
+        contacts=",".join(ad.contacts),
+        price=ad.price,
+        tags=await db.get_tags_by_name(start_data.get("tags")),
+        currency_code=ad.currency_code,
+        negotiable=ad.negotiable,
+        title=ad.title,
+        photos_ids=",".join(ad.photos_ids),
     )
     print("post_ad", post_ad)
 
     session.add(post_ad)
-    session.commit()
+    await session.commit()
 
     await call.answer("Объявление было успешно опубликовано в канале!")
     await manager.start(Main.main, mode=StartMode.RESET_STACK)
 
 
 async def get_tags_data(dialog_manager: DialogManager, **_kwargs):
+    print(dialog_manager.current_context().start_data)
+
     state = dialog_manager.current_context().state.state.split(":")[0]
     user_tags: list[str] = dialog_manager.current_context().widget_data.get('tags', [])
+
     db: DBCommands = dialog_manager.data.get("db_commands")
     restriction: Restriction = await db.get_restriction("tag")
-
+    # if start_data := dialog_manager.current_context().start_data:
+    #     session = dialog_manager.data.get("session")
+    #     post_id = int(start_data.get("post_id"))
+    #     post_ad: PostAd = await session.get(PostAd, post_id)
+    #     user_tags.extend([tag.name for tag in post_ad.tags])
     tags: list[str] = await db.get_tags()
 
     if state == "Sell":

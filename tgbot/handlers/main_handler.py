@@ -5,7 +5,7 @@ from aiogram_dialog.widgets.kbd import Row, Start
 from aiogram_dialog.widgets.text import Format, Const
 from aiogram_dialog.widgets.when import Whenable
 
-from tgbot.misc.states import Main, Buy, Sell, AdminPanel
+from tgbot.misc.states import Main, Buy, Sell, AdminPanel, MyAds
 from tgbot.misc.switch_inline_query_current_chat import SwitchInlineQueryCurrentChat
 
 
@@ -48,6 +48,11 @@ main_dialog = Dialog(
                 id="sell",
                 state=Sell.tags
             )
+        ),
+        Start(
+            text=Const("Мои объявления"),
+            id="my_ads",
+            state=MyAds.show
         ),
         Start(
             text=Const("⚜ Панель управления"),

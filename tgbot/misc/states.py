@@ -3,7 +3,6 @@ from aiogram.dispatcher.filters.state import StatesGroup, State
 
 class Main(StatesGroup):
     main = State()
-    my_ads = State()
 
 
 class AdminPanel(StatesGroup):
@@ -44,3 +43,20 @@ class ConfirmAd(StatesGroup):
 
 class ShowUser(StatesGroup):
     true = State()
+
+
+class MyAds(StatesGroup):
+    show = State()
+
+
+class ShowMyAd(StatesGroup):
+    true = State()
+
+
+class Edit(StatesGroup):
+    tags = State()
+    description = State()
+    contact = State()
+    price = State()
+    title = State()
+    photo = State()

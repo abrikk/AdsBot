@@ -3,14 +3,17 @@ from typing import Union, Dict, Any
 
 import phonenumbers
 from aiogram import types
-from aiogram_dialog import DialogManager, ShowMode, Data
+from aiogram_dialog import DialogManager, ShowMode, Data, StartMode
 from aiogram_dialog.manager.protocols import ManagedDialogAdapterProto
 from aiogram_dialog.widgets.input import TextInput
-from aiogram_dialog.widgets.kbd import Button, Select
+from aiogram_dialog.widgets.kbd import Button, Select, Row, Start
 from aiogram_dialog.widgets.managed import ManagedWidgetAdapter
+from aiogram_dialog.widgets.text import Format, Const
 from aiogram_dialog.widgets.when import Whenable
 
-from tgbot.misc.states import Sell, Buy, Preview, ConfirmAd
+from tgbot.misc.states import Sell, Buy, Preview, ConfirmAd, Main
+from tgbot.models.post_ad import PostAd
+from tgbot.services.db_commands import DBCommands
 
 REQUIRED_FIELDS = {
     "sell": {"description", "price", "contacts", "tags"},
@@ -221,6 +224,25 @@ async def set_default(_, dialog_manager: DialogManager):
     dialog_manager.current_context().widget_data['currency'] = "₴"
 
 
+async def set_edit_default(_, dialog_manager: DialogManager):
+    session = dialog_manager.data.get('session')
+    db: DBCommands = dialog_manager.data.get('db_commands')
+    post_ad: PostAd = await session.get(PostAd, int(dialog_manager.current_context().start_data.get('post_id')))
+    dialog_manager.current_context().widget_data['tags'] = [tag.tag_name for tag in post_ad.tags]
+    await dialog_manager.dialog().find('currency_code').set_checked(event="", item_id=post_ad.currency_code)
+    tag, contact, pic, post = await db.get_values_of_restrictions()
+    limits: dict = {
+        "tag_limit": tag,
+        "contact_limit": contact,
+        "pic_limit": pic,
+        "post_limit": post
+    }
+
+    dialog_manager.current_context().widget_data.update(limits)
+    # ToDo deal with bug
+    # await dialog_manager.dialog().find('negotiable').set_checked(event=dialog_manager.event, checked=post_ad.negotiable)
+
+
 async def get_currency_data(**_kwargs):
     currencies = [
         ('$', 'USD'),
@@ -267,3 +289,39 @@ async def process_result(_start_data: Data, result: Any, manager: DialogManager)
     if result:
         print(2, result)
         manager.current_context().widget_data.update(**result)
+
+
+def get_widgets(where: str = None):
+    if where == 'edit':
+        btn = "Сохранить"
+        btn_id = "save"
+    else:
+        btn = "Опубликовать"
+        btn_id = "post"
+    buttons = (
+        Format(text="{form_text}", when="form_text"),
+        Row(
+            Button(text=Const("<<"), id="left", on_click=change_page),
+            Button(text=Format(text="{page}"), id="page"),
+            Button(text=Const(">>"), id="right", on_click=change_page)
+        ),
+        Row(
+            Start(
+                text=Const("🔚 Назад"),
+                id="back_to_main",
+                state=Main.main,
+                mode=StartMode.RESET_STACK
+            ),
+            Button(
+                text=Const("👁"),
+                id="preview",
+                on_click=show_preview
+            ),
+            Button(
+                text=Const(btn),
+                id=btn_id,
+                on_click=check_required_fields
+            )
+        )
+    )
+    return buttons

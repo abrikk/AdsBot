@@ -32,7 +32,7 @@ async def set_default_data(_, dialog_manager: DialogManager):
     post_limit: int = await db.get_value_of_restriction("post")
     user_role: str = await db.get_user_role(user_id)
     user_post_limit: int = await db.get_user_post_limit(user_id)
-    checked = True if (not user_post_limit) or user_post_limit == post_limit else False
+    checked: bool = True if (not user_post_limit) or user_post_limit == post_limit else False
 
     value = user_post_limit if user_post_limit else post_limit
 

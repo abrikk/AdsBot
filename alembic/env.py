@@ -6,7 +6,7 @@ from sqlalchemy import pool
 from alembic import context
 
 from tgbot.config import Config, load_config
-from tgbot.models.ad import PostAd
+from tgbot.models.post_ad import PostAd
 from tgbot.models.restriction import Restriction
 from tgbot.models.tag import Tag
 from tgbot.models.user import User
