@@ -121,9 +121,15 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
     else:
         post = await bot.send_message(chat_id=config.tg_bot.channel_id,
                                       text=ad.post())
-
+    # print(post)
+    # print(len(post))
+    # if isinstance(post, list):
+    #     message_ids = [p.message_id for p in post]
+    # for p in post:
+    #     print(p.message_id)
+    # print(post.message_id)
     post_ad: PostAd = PostAd(
-        post_id=post[0].message_id,
+        post_id=post.message_id,
         post_type=state_class.lower(),
         user_id=obj.from_user.id,
         description=ad.description,

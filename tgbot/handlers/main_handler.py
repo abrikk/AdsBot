@@ -31,7 +31,7 @@ def is_admin(data: Dict, _widget: Whenable, manager: DialogManager):
     if user := manager.data.get("user"):
         return user.role in ('admin', 'owner')
     else:
-        return data.get("user_role") == 'admin'
+        return data.get("user_role") in ('admin', 'owner')
 
 
 main_dialog = Dialog(

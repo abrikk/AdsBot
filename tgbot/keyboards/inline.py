@@ -16,3 +16,4 @@ def confirm_post(post_id: int):
             callback_data=conf_cb.new(post_id=str(post_id), status="inactive")
         )
     )
+    return markup

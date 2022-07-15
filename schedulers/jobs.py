@@ -1,17 +1,21 @@
 from aiogram import Bot
 from sqlalchemy.orm import sessionmaker
 
-from schedulers.functions import make_link_to_post
 from tgbot.constants import ACTIVE, INACTIVE
 from tgbot.keyboards.inline import confirm_post
 from tgbot.models.post_ad import PostAd
+
+
+def make_link_to_post(channel_id: int, post_id: int):
+    return f"https://t.me/c/{str(channel_id).removeprefix('-100')}/{post_id}"
 
 
 async def ask_if_active(user_id: int, post_id: int, channel_id: int, bot: Bot):
     await bot.send_message(
         user_id,
         f'Ваше объявление {make_link_to_post(channel_id, post_id)} еще актуальное?',
-        reply_markup=confirm_post(post_id)
+        reply_markup=confirm_post(post_id),
+        disable_web_page_preview=False
     )
 
 

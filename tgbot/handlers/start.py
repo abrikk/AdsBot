@@ -3,6 +3,7 @@ from aiogram.dispatcher.filters import CommandStart
 from aiogram_dialog import DialogManager, StartMode
 
 from tgbot.config import Config
+from tgbot.constants import OWNER, ADMIN, BANNED, USER
 from tgbot.misc.states import Main
 from tgbot.models.user import User
 
@@ -14,10 +15,14 @@ async def start_bot(message: types.Message, config: Config, session, dialog_mana
 
     if not user:
         role_in_channel = (await message.bot.get_chat_member(config.tg_bot.channel_id, user_id)).status
-        if user_id in config.tg_bot.admin_ids or role_in_channel in ("creator", "administrator"):
-            role: str = "admin"
+        if role_in_channel == 'creator':
+            role = OWNER
+        elif user_id in config.tg_bot.admin_ids or role_in_channel == 'administrator':
+            role: str = ADMIN
+        elif role_in_channel == BANNED:
+            role: str = BANNED
         else:
-            role: str = "user"
+            role: str = USER
 
         user = User(
             user_id=user_id,

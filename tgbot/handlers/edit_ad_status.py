@@ -11,12 +11,14 @@ from tgbot.models.post_ad import PostAd
 
 async def catch_ad_status(call: types.CallbackQuery, callback_data: dict,
                           config: Config, session):
+    print("are u here, uh?")
     scheduler: AsyncIOScheduler = call.bot.get('scheduler')
     post_id = callback_data.get('post_id')
     status = callback_data.get('status')
     post_ad: PostAd = await session.get(PostAd, post_id)
     if status == INACTIVE:
         post_ad.status = INACTIVE
+        await call.bot.delete_message(chat_id=config.tg_bot.channel_id, message_id=post_id)
         await session.commit()
     else:
         data: dict = {

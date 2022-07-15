@@ -7,9 +7,9 @@ from schedulers.jobs import ask_if_active, check_if_active
 
 
 def create_jobs(scheduler: AsyncIOScheduler, user_id, post_id, channel_id):
-    time_to_ask = datetime.datetime.now() + datetime.timedelta(minutes=1)
+    time_to_ask = datetime.datetime.now() + datetime.timedelta(seconds=20)
 
-    time_to_check = datetime.datetime.now() + datetime.timedelta(minutes=2)
+    time_to_check = datetime.datetime.now() + datetime.timedelta(minutes=30)
 
     scheduler.add_job(
         ask_if_active,
@@ -23,7 +23,3 @@ def create_jobs(scheduler: AsyncIOScheduler, user_id, post_id, channel_id):
         kwargs=dict(user_id=user_id, post_id=post_id, channel_id=channel_id),
         id=f"check_{post_id}"
     )
-
-
-def make_link_to_post(channel_id: int, post_id: int):
-    return f"https://t.me/c/{str(channel_id).removeprefix('-100')}/{post_id}"

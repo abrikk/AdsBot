@@ -4,7 +4,7 @@ from aiogram import types
 from aiogram_dialog import Dialog, Window, StartMode
 from aiogram_dialog.widgets.input import TextInput, MessageInput
 from aiogram_dialog.widgets.kbd import Row, Button, \
-    Start, Checkbox, Radio, Select, ScrollingGroup, Group
+    Start, Radio, Select, ScrollingGroup, Group
 from aiogram_dialog.widgets.text import Const, Format
 
 from tgbot.handlers.buy_and_sell.form import price_validator, get_currency_data, currency_selected, contact_validator, \
@@ -17,6 +17,9 @@ from tgbot.misc.states import Main, Preview, ConfirmAd
 
 
 # getting dialog
+from tgbot.misc.temp_checkbox import Checkbox
+
+
 def get_dialog(where: str) -> Dialog:
     order_windows: list = [
         Window(
@@ -44,16 +47,16 @@ def get_dialog(where: str) -> Dialog:
             getter=[get_form_text, get_currency_data]
         ),
         Window(
-            *get_widgets(),
-            MessageInput(
-                func=contact_validator,
-                content_types=types.ContentType.TEXT
-            ),
             Button(
                 text=Const("Удалить контакт"),
                 id="delete_contact",
                 when=contact_exist,
                 on_click=delete_contact
+            ),
+            *get_widgets(),
+            MessageInput(
+                func=contact_validator,
+                content_types=types.ContentType.TEXT
             ),
             state=to_state.get(where).contact,
             getter=[get_form_text]
@@ -123,16 +126,16 @@ def get_dialog(where: str) -> Dialog:
             getter=[get_form_text]
         ),
         Window(
-            *get_widgets(),
-            MessageInput(
-                pic_validator,
-                content_types=[types.ContentType.ANY]
-            ),
             Button(
                 text=Const("Удалить фото"),
                 id="delete_pic",
                 when=pic_exist,
                 on_click=delete_pic
+            ),
+            *get_widgets(),
+            MessageInput(
+                pic_validator,
+                content_types=[types.ContentType.ANY]
             ),
             state=to_state.get(where).photo,
             getter=[get_form_text]
