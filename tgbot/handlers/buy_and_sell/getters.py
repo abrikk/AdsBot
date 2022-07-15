@@ -136,7 +136,7 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
         message_ids = [PostIds(post_id)]
 
     post_ad: PostAd = PostAd(
-        post_id=message_ids,
+        post_id=post_id,
         post_type=state_class.lower(),
         user_id=obj.from_user.id,
         description=ad.description,
@@ -147,6 +147,7 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
         negotiable=ad.negotiable,
         title=ad.title,
         photos_ids=",".join(ad.photos_ids),
+        related_messages=message_ids
     )
 
     session.add(post_ad)
