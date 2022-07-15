@@ -11,7 +11,7 @@ from tgbot.handlers.buy_and_sell.form import get_active_section, get_current_fil
 from tgbot.misc.ad import SalesAd, PurchaseAd
 from tgbot.misc.states import Main
 from tgbot.models.post_ad import PostAd
-from tgbot.models.post_ids import PostIds
+from tgbot.models.post_ids import PostId
 from tgbot.models.restriction import Restriction
 from tgbot.services.db_commands import DBCommands
 
@@ -126,14 +126,14 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
     if isinstance(sent_post, list):
         post_id = sent_post[-1].message_id
         message_ids = [
-            PostIds(
+            PostId(
                 post_id=post_id,
-                message_id=p.message_id
+                message=p.message_id
             ) for p in sent_post[:-1]
         ]
     else:
         post_id = sent_post.message_id
-        message_ids = [PostIds(post_id)]
+        message_ids = []
 
     post_ad: PostAd = PostAd(
         post_id=post_id,

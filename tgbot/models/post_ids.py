@@ -3,11 +3,11 @@ from sqlalchemy import BigInteger, Column, String, ForeignKey
 from tgbot.services.db_base import Base
 
 
-class PostId(Base):
-    __tablename__ = "post_ids"
+class RelatedMessage(Base):
+    __tablename__ = "related_message"
     id = Column(BigInteger, primary_key=True)
     post_id = Column(BigInteger, ForeignKey("ads.post_id", ondelete="CASCADE"))
-    message = Column(BigInteger, nullable=False)
+    message_id = Column(BigInteger, nullable=False)
 
     __mapper_args__ = {"eager_defaults": True}
 

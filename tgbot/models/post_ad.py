@@ -30,7 +30,10 @@ class PostAd(Base):
         lazy="selectin"
     )
 
-    related_messages = relationship("PostId")
+    related_messages = relationship(
+        "RelatedMessage",
+        lazy="joined"
+    )
 
     __mapper_args__ = {"eager_defaults": True}
 

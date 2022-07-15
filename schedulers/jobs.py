@@ -22,7 +22,7 @@ async def ask_if_active(user_id: int, post_id: int, channel_id: int, bot: Bot):
 async def check_if_active(user_id: int, post_id: int, channel_id: int, bot: Bot, session: sessionmaker):
     async with session() as session:
         post_ad: PostAd = await session.get(PostAd, post_id)
-
+        ptint(post_ad.related_messages)
         if post_ad.status == ACTIVE:
             post_ad.status = INACTIVE
             await session.commit()
