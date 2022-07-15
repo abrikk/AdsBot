@@ -30,6 +30,8 @@ class PostAd(Base):
         lazy="selectin"
     )
 
+    related_message = relationship("PostId")
+
     __mapper_args__ = {"eager_defaults": True}
 
     def __repr__(self):
