@@ -1,12 +1,13 @@
-from sqlalchemy import BigInteger, Column, String
+from sqlalchemy import BigInteger, Column, String, ForeignKey
 
 from tgbot.services.db_base import Base
 
 
 class PostIds(Base):
     __tablename__ = "post_ids"
-    main_id = Column(BigInteger, primary_key=True)
-    another_ids = Column(String(length=512), nullable=True)
+    id = Column(BigInteger, primary_key=True)
+    post_id = Column(BigInteger, ForeignKey("ads.post_id", ondelete="CASCADE"))
+    message_id = Column(BigInteger, nullable=True)
 
     __mapper_args__ = {"eager_defaults": True}
 

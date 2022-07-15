@@ -3,7 +3,7 @@ import datetime
 
 from aiogram import Dispatcher, types, Bot
 from aiogram.dispatcher.filters import Command
-from aiogram.types import ChatMemberUpdated
+from aiogram.types import ChatMemberUpdated, MediaGroup
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler_di import ContextSchedulerDecorator
@@ -42,10 +42,31 @@ async def test_1(message: types.Message):
 
 
 async def test_2(message: types.Message, config: Config):
-    await message.answer(message.message_id)
-    x = await message.bot.send_message(config.tg_bot.channel_id, f"test_2: {message.message_id}")
-    await asyncio.sleep(5)
-    await message.bot.delete_message(config.tg_bot.channel_id, x.message_id)
+    album = MediaGroup()
+    print(album)
+    album.attach_photo(photo="AgACAgIAAxkBAAIVBmLRUwHKZekXiyGyGM4YRTyVxqRFAAJXvzEbF0aISkcWyJnF_7kmAQADAgADeAADKQQ")
+    print(album)
+    album.attach_photo(photo="AgACAgIAAxkBAAIVCGLRUwZC35cG8T4Y-u1po9sSzFLRAAJYvzEbF0aISr2wEHmArZHWAQADAgADbQADKQQ")
+    print(album)
+    album.attach_photo(
+        photo="AgACAgIAAxkBAAIVCmLRUwvCPSr3s2j-UFyICS0-X-EgAAJZvzEbF0aISngOcG2LDTaVAQADAgADbQADKQQ",
+        caption="Какое то описание"
+    )
+    print(album)
+
+    post = await message.bot.send_media_group(chat_id=config.tg_bot.channel_id,
+                                              media=album)
+    print(post)
+    for p in post:
+        print(p)
+        print(p.message_id)
+        print(p.caption)
+    print(post[-1].caption)
+    print(post[-1].message_id)
+    # await message.answer(message.message_id)
+    # x = await message.bot.send_message(config.tg_bot.channel_id, f"test_2: {message.message_id}")
+    # await asyncio.sleep(5)
+    # await message.bot.delete_message(config.tg_bot.channel_id, x.message_id)
 
 
 async def delete_all_jobs(message: types.Message):

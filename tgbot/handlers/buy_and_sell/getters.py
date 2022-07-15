@@ -11,6 +11,7 @@ from tgbot.handlers.buy_and_sell.form import get_active_section, get_current_fil
 from tgbot.misc.ad import SalesAd, PurchaseAd
 from tgbot.misc.states import Main
 from tgbot.models.post_ad import PostAd
+from tgbot.models.post_ids import PostIds
 from tgbot.models.restriction import Restriction
 from tgbot.services.db_commands import DBCommands
 
@@ -116,20 +117,26 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
 
         album.attach_photo(photo=ad.photos_ids[-1], caption=ad.post())
 
-        post = await bot.send_media_group(chat_id=config.tg_bot.channel_id,
-                                          media=album)
+        sent_post = await bot.send_media_group(chat_id=config.tg_bot.channel_id,
+                                               media=album)
     else:
-        post = await bot.send_message(chat_id=config.tg_bot.channel_id,
-                                      text=ad.post())
-    # print(post)
-    # print(len(post))
-    # if isinstance(post, list):
-    #     message_ids = [p.message_id for p in post]
-    # for p in post:
-    #     print(p.message_id)
-    # print(post.message_id)
+        sent_post = await bot.send_message(chat_id=config.tg_bot.channel_id,
+                                           text=ad.post())
+
+    if isinstance(sent_post, list):
+        post_id = sent_post[-1].message_id
+        message_ids = [
+            PostIds(
+                post_id=post_id,
+                message_id=p.message_id
+            ) for p in sent_post[:-1]
+        ]
+    else:
+        post_id = sent_post.message_id
+        message_ids = [PostIds(post_id)]
+
     post_ad: PostAd = PostAd(
-        post_id=post.message_id,
+        post_id=message_ids,
         post_type=state_class.lower(),
         user_id=obj.from_user.id,
         description=ad.description,
