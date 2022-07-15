@@ -5,6 +5,7 @@ from aiogram.types import MediaGroup
 from aiogram_dialog import DialogManager, StartMode
 from aiogram_dialog.widgets.kbd import Button
 
+from schedulers.functions import create_jobs
 from tgbot.config import Config
 from tgbot.handlers.buy_and_sell.form import get_active_section, get_current_file_id
 from tgbot.misc.ad import SalesAd, PurchaseAd
@@ -47,8 +48,7 @@ async def get_final_text(dialog_manager: DialogManager, **_kwargs):
     start_data: dict = dialog_manager.current_context().start_data
     current_state: str = dialog_manager.current_context().state.state.split(":")[-1]
     state_class: str = start_data.get("state_class")
-    print(state_class)
-    print(start_data)
+
     if post_id := start_data.get("post_id"):
         session = dialog_manager.data.get("session")
         post_ad: PostAd = await session.get(PostAd, post_id)
@@ -65,7 +65,6 @@ async def get_final_text(dialog_manager: DialogManager, **_kwargs):
         }
         data.update(start_data)
         data.pop("post_id", None)
-        print("dataaa", data)
     else:
         data: dict = copy.deepcopy(start_data)
 
@@ -91,6 +90,7 @@ async def get_final_text(dialog_manager: DialogManager, **_kwargs):
 
 
 async def on_confirm(call: types.CallbackQuery, _button: Button, manager: DialogManager):
+    scheduler = call.bot.get("scheduler")
     obj = manager.event
     bot: Bot = obj.bot
     session = manager.data.get("session")
@@ -135,30 +135,25 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
         title=ad.title,
         photos_ids=",".join(ad.photos_ids),
     )
-    print("post_ad", post_ad)
 
     session.add(post_ad)
     await session.commit()
+
+    create_jobs(scheduler, obj.from_user.id, post_ad.post_id, config.tg_bot.channel_id)
 
     await call.answer("Объявление было успешно опубликовано в канале!")
     await manager.start(Main.main, mode=StartMode.RESET_STACK)
 
 
 async def get_tags_data(dialog_manager: DialogManager, **_kwargs):
-    print(dialog_manager.current_context().start_data)
-
     state = dialog_manager.current_context().state.state.split(":")
     state = dialog_manager.current_context().widget_data.get('state', state)[0]
 
     user_tags: list[str] = dialog_manager.current_context().widget_data.get('tags', [])
-    print("state", state)
+
     db: DBCommands = dialog_manager.data.get("db_commands")
     restriction: Restriction = await db.get_restriction("tag")
-    # if start_data := dialog_manager.current_context().start_data:
-    #     session = dialog_manager.data.get("session")
-    #     post_id = int(start_data.get("post_id"))
-    #     post_ad: PostAd = await session.get(PostAd, post_id)
-    #     user_tags.extend([tag.name for tag in post_ad.tags])
+
     tags: list[str] = await db.get_tags()
 
     if state == "Sell":

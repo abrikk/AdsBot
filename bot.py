@@ -50,7 +50,7 @@ async def main():
     registry = DialogRegistry(dp)
 
     scheduler = setup_scheduler(bot=bot, config=config, storage=storage, session=sessionmaker)
-
+    scheduler.start()
     bot["scheduler"] = scheduler
 
     await on_startup_notify(bot, config)

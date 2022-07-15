@@ -16,8 +16,8 @@ def setup_scheduler(bot: Bot = None, config: Config = None, storage: RedisStorag
 
     job_stores = {
         "default": RedisJobStore(
-            db=2,
-            host='redis_cache',
+            db=config.redis_config.db,
+            host=config.redis_config.host,
             port=config.redis_config.port,
             jobs_key="dispatched_trips_jobs", run_times_key="dispatched_trips_running"
         )

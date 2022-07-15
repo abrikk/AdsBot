@@ -7,6 +7,7 @@ from tgbot.services.db_base import Base
 
 class PostAd(Base):
     __tablename__ = "ads"
+    status = Column(String(length=16), default="active")
     post_id = Column(BigInteger, primary_key=True)
     post_type = Column(String(length=4))
     user_id = Column(BigInteger, nullable=False)
