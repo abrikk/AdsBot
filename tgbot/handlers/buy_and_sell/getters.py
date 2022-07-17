@@ -11,7 +11,7 @@ from tgbot.handlers.buy_and_sell.form import get_active_section, get_current_fil
 from tgbot.misc.ad import SalesAd, PurchaseAd
 from tgbot.misc.states import Main
 from tgbot.models.post_ad import PostAd
-from tgbot.models.post_ids import PostId
+from tgbot.models.related_messages import RelatedMessage
 from tgbot.models.restriction import Restriction
 from tgbot.services.db_commands import DBCommands
 
@@ -49,6 +49,7 @@ async def get_final_text(dialog_manager: DialogManager, **_kwargs):
     start_data: dict = dialog_manager.current_context().start_data
     current_state: str = dialog_manager.current_context().state.state.split(":")[-1]
     state_class: str = start_data.get("state_class")
+    print(state_class)
 
     if post_id := start_data.get("post_id"):
         session = dialog_manager.data.get("session")
@@ -83,7 +84,7 @@ async def get_final_text(dialog_manager: DialogManager, **_kwargs):
         start_data['photos_len'] = len(ad.photos_ids)
 
     return {
-        "final_text": ad.preview() if current_state == "preview" else ad.confirm(),
+        "final_text": ad.preview() if current_state == "preview" else ad.confirm(state_class),
         "file_id": get_current_file_id(ad.photos_ids, current_page),
         "show_scroll": len(ad.photos_ids) > 1,
         "photo_text": len(ad.photos_ids) > 1 and current_page and f"{current_page}/{len(ad.photos_ids)}"
@@ -126,9 +127,9 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
     if isinstance(sent_post, list):
         post_id = sent_post[-1].message_id
         message_ids = [
-            PostId(
+            RelatedMessage(
                 post_id=post_id,
-                message=p.message_id
+                message_id=p.message_id
             ) for p in sent_post[:-1]
         ]
     else:
@@ -169,11 +170,6 @@ async def get_tags_data(dialog_manager: DialogManager, **_kwargs):
     restriction: Restriction = await db.get_restriction("tag")
 
     tags: list[str] = await db.get_tags()
-
-    if state == "Sell":
-        tags.remove("куплю")
-    elif state == "Buy":
-        tags.remove("продам")
 
     for tag in user_tags:
         tags.remove(tag.removeprefix("#️⃣"))

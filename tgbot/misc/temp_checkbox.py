@@ -18,11 +18,12 @@ class Checkbox(BaseCheckbox):
         self.default = default
 
     def is_checked(self, manager: DialogManager) -> bool:
-        return self.get_widget_data(manager, self.default)
+        return manager.current_context().widget_data.get(self.widget_id,
+                                                         self.default)
 
     async def set_checked(self, event: ChatEvent, checked: bool,
                           manager: DialogManager) -> None:
-        self.set_widget_data(manager, checked)
+        manager.current_context().widget_data[self.widget_id] = checked
         await self.on_state_changed.process_event(
             event, self.managed(manager), manager
         )

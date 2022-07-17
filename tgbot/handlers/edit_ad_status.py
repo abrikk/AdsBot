@@ -7,20 +7,22 @@ from tgbot.constants import INACTIVE
 from tgbot.keyboards.inline import conf_cb
 from tgbot.misc.ad import SalesAd, PurchaseAd
 from tgbot.models.post_ad import PostAd
+from tgbot.models.related_messages import RelatedMessage
 
 
 async def catch_ad_status(call: types.CallbackQuery, callback_data: dict,
                           config: Config, session):
-    print("are u here, uh?")
     scheduler: AsyncIOScheduler = call.bot.get('scheduler')
-    post_id = callback_data.get('post_id')
+    post_id = int(callback_data.get('post_id'))
     status = callback_data.get('status')
     post_ad: PostAd = await session.get(PostAd, post_id)
+
     if status == INACTIVE:
         post_ad.status = INACTIVE
         await call.bot.delete_message(chat_id=config.tg_bot.channel_id, message_id=post_id)
         await session.commit()
     else:
+        scheduler.remove_job("check_" + str(post_id))
         data: dict = {
             "tags": [tag.tag_name for tag in post_ad.tags],
             "description": post_ad.description,
@@ -29,7 +31,7 @@ async def catch_ad_status(call: types.CallbackQuery, callback_data: dict,
             "currency_code": post_ad.currency_code,
             "negotiable": post_ad.negotiable,
             "title": post_ad.title,
-            "photos_ids": post_ad.photos_ids.split(","),
+            "photos_ids": post_ad.photos_ids.split(",") if post_ad.photos_ids else [],
         }
 
         ad = SalesAd(**data) if post_ad.post_type == "sell" else PurchaseAd(**data)
@@ -41,13 +43,25 @@ async def catch_ad_status(call: types.CallbackQuery, callback_data: dict,
 
             album.attach_photo(photo=ad.photos_ids[-1], caption=ad.post())
 
-            post = await call.bot.send_media_group(chat_id=config.tg_bot.channel_id,
-                                                   media=album)
+            sent_post = await call.bot.send_media_group(chat_id=config.tg_bot.channel_id,
+                                                        media=album)
         else:
-            post = await call.bot.send_message(chat_id=config.tg_bot.channel_id,
-                                               text=ad.post())
+            sent_post = await call.bot.send_message(chat_id=config.tg_bot.channel_id,
+                                                    text=ad.post())
 
-        post_ad.post_id = post[0].message_id
+        if isinstance(sent_post, list):
+            post_id = sent_post[-1].message_id
+            message_ids = [
+                RelatedMessage(
+                    post_id=post_id,
+                    message_id=p.message_id
+                ) for p in sent_post[:-1]
+            ]
+        else:
+            post_id = sent_post.message_id
+            message_ids = []
+        post_ad.post_id = post_id
+        post_ad.related_messages = message_ids
         await session.commit()
         await call.answer(text="Объявление было успешно обновлено!")
     scheduler.remove_job(job_id=f"check_{post_id}")

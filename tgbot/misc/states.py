@@ -15,22 +15,20 @@ class AdminPanel(StatesGroup):
 
 class Buy(StatesGroup):
     tags = State()
-    description = State()
-    contact = State()
-
-    price = State()
     title = State()
+    description = State()
     photo = State()
+    price = State()
+    contact = State()
 
 
 class Sell(StatesGroup):
     tags = State()
+    title = State()
     description = State()
+    photo = State()
     price = State()
     contact = State()
-
-    title = State()
-    photo = State()
 
 
 class Preview(StatesGroup):
@@ -51,21 +49,22 @@ class MyAds(StatesGroup):
 
 class ShowMyAd(StatesGroup):
     true = State()
+    confirm_delete = State()
 
 
 class EditSell(StatesGroup):
     tags = State()
+    title = State()
     description = State()
+    photo = State()
     price = State()
     contact = State()
-    title = State()
-    photo = State()
 
 
 class EditBuy(StatesGroup):
     tags = State()
-    description = State()
-    contact = State()
-    price = State()
     title = State()
+    description = State()
     photo = State()
+    price = State()
+    contact = State()

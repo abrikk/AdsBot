@@ -6,12 +6,12 @@ from aiogram import types
 from aiogram_dialog import DialogManager, ShowMode, Data, StartMode
 from aiogram_dialog.manager.protocols import ManagedDialogAdapterProto
 from aiogram_dialog.widgets.input import TextInput
-from aiogram_dialog.widgets.kbd import Button, Select, Row, Start
+from aiogram_dialog.widgets.kbd import Button, Select, Row
 from aiogram_dialog.widgets.managed import ManagedWidgetAdapter
 from aiogram_dialog.widgets.text import Format, Const
 from aiogram_dialog.widgets.when import Whenable
 
-from tgbot.misc.states import Sell, Buy, Preview, ConfirmAd, Main, MyAds, ShowMyAd, EditSell, EditBuy
+from tgbot.misc.states import Sell, Buy, Preview, ConfirmAd, Main, ShowMyAd, EditSell, EditBuy
 from tgbot.models.post_ad import PostAd
 from tgbot.services.db_commands import DBCommands
 
@@ -90,15 +90,15 @@ async def change_page(_obj: Union[types.CallbackQuery, types.Message], button: U
 
     if action == 'left':
         if current_state == 'tags':
-            await manager.dialog().switch_to(to_state.get(states_group).photo)
+            await manager.dialog().switch_to(to_state.get(states_group).contact)
         else:
             await manager.dialog().back()
     elif action == 'right':
-        if current_state == 'photo':
+        if current_state == 'contact':
             await manager.dialog().switch_to(to_state.get(states_group).tags)
         else:
             await manager.dialog().next()
-    elif current_state != 'photo':
+    elif current_state != 'contact':
         await manager.dialog().next()
 
 
@@ -227,7 +227,7 @@ async def pic_validator(message: types.Message, _dialog: ManagedDialogAdapterPro
         case types.ContentType.PHOTO:
             photo = message.photo[-1]
             photos_data = manager.current_context().widget_data.setdefault('photos_ids', [])
-            if len(photos_data) < pic_limit:
+            if len(photos_data) <= pic_limit:
                 photos_data.append(photo.file_id)
             else:
                 photos_data[-1] = photo.file_id
@@ -238,6 +238,11 @@ async def pic_validator(message: types.Message, _dialog: ManagedDialogAdapterPro
 
 # Buttons and dialogs
 async def set_default(_, dialog_manager: DialogManager):
+    state = dialog_manager.current_context().state.state.split(":")[0]
+    # if state == "Sell":
+    #     dialog_manager.current_context().widget_data.setdefault("tags", ["продам"])
+    # elif state == "Buy":
+    #     dialog_manager.current_context().widget_data.setdefault("tags", ["куплю"])
     await dialog_manager.dialog().find('currency_code').set_checked(event="", item_id="UAH")
     dialog_manager.current_context().widget_data['currency'] = "₴"
 
@@ -252,7 +257,7 @@ async def set_edit_default(_, dialog_manager: DialogManager):
     limits: dict = {
         "tag_limit": tag,
         "contact_limit": contact,
-        "pic_limit": pic,
+        "pic_limit": len(post_ad.photos_ids.split(",")) if post_ad.photos_ids else 0,
         "post_limit": post
     }
 
@@ -262,8 +267,8 @@ async def set_edit_default(_, dialog_manager: DialogManager):
     ]
     dialog_manager.current_context().widget_data['post_id'] = post_ad.post_id
     dialog_manager.current_context().widget_data['tags'] = [tag.tag_name for tag in post_ad.tags]
-    dialog_manager.current_context().widget_data['contacts'] = post_ad.contacts.split(',')
-    dialog_manager.current_context().widget_data['photos_ids'] = post_ad.photos_ids.split(',')
+    dialog_manager.current_context().widget_data['contacts'] = post_ad.contacts.split(',') if post_ad.contacts else []
+    dialog_manager.current_context().widget_data['photos_ids'] = post_ad.photos_ids.split(",") if post_ad.photos_ids else []
     dialog_manager.current_context().widget_data.update(limits)
 
     # ToDo deal with bug with checkbox
@@ -336,7 +341,7 @@ async def update_ad(post_ad: PostAd, dict_to_update: dict, db: DBCommands):
 async def show_preview(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
     state_class = manager.current_context().state.state.split(":")[0]
     widget_data: dict = manager.current_context().widget_data
-
+    print(widget_data)
     data: dict = copy.deepcopy(widget_data)
     data.pop('currency_code', None)
     data.pop('sg_tags', None)
@@ -350,7 +355,7 @@ async def process_result(_start_data: Data, result: Any, manager: DialogManager)
         manager.current_context().widget_data.update(**result)
 
 
-def get_widgets(where: str = None):
+def get_widgets(where: str = "main"):
     if where == 'edit':
         btn = "Сохранить"
         btn_id = "save"
@@ -365,11 +370,10 @@ def get_widgets(where: str = None):
             Button(text=Const(">>"), id="right", on_click=change_page)
         ),
         Row(
-            Start(
+            Button(
                 text=Const("🔚 Назад"),
-                id="back_to_main",
-                state=MyAds.show if where == 'edit' else Main.main,
-                mode=StartMode.RESET_STACK
+                id=f"go_back_{where}",
+                on_click=go_back_page
             ),
             Button(
                 text=Const("👁"),
@@ -384,3 +388,17 @@ def get_widgets(where: str = None):
         )
     )
     return buttons
+
+
+async def go_back_page(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
+    state = manager.current_context().state.state.split(":")[0]
+    if state == "EditSell":
+        start_data = manager.current_context().start_data
+        await manager.start(state=ShowMyAd.true, data=start_data, mode=StartMode.RESET_STACK)
+    else:
+        await manager.start(state=Main.main, mode=StartMode.RESET_STACK)
+
+
+def make_link_to_post(channel_id: int, post_id: int):
+    return f"https://t.me/c/{str(channel_id).removeprefix('-100')}/{post_id}"
+

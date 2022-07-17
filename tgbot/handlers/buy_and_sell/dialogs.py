@@ -21,51 +21,6 @@ from tgbot.misc.temp_checkbox import Checkbox
 
 
 def get_dialog(where: str) -> Dialog:
-    order_windows: list = [
-        Window(
-            Checkbox(
-                checked_text=Const("Торг уместен: Да ✅"),
-                unchecked_text=Const("Торг уместен: Нет ❌"),
-                id="negotiable",
-                default=False,
-                when="show_checkbox"
-            ),
-            Radio(
-                checked_text=Format("✔️ {item[0]}"),
-                unchecked_text=Format("{item[0]}"),
-                id="currency_code",
-                item_id_getter=operator.itemgetter(1),
-                items="currencies",
-                on_click=currency_selected
-            ),
-            *get_widgets(),
-            MessageInput(
-                func=price_validator,
-                content_types=types.ContentType.TEXT
-            ),
-            state=to_state.get(where).price,
-            getter=[get_form_text, get_currency_data]
-        ),
-        Window(
-            Button(
-                text=Const("Удалить контакт"),
-                id="delete_contact",
-                when=contact_exist,
-                on_click=delete_contact
-            ),
-            *get_widgets(),
-            MessageInput(
-                func=contact_validator,
-                content_types=types.ContentType.TEXT
-            ),
-            state=to_state.get(where).contact,
-            getter=[get_form_text]
-        ),
-    ]
-
-    if where == "buy":
-        order_windows = order_windows[::-1]
-
     dialog = Dialog(
         Window(
             ScrollingGroup(
@@ -106,6 +61,16 @@ def get_dialog(where: str) -> Dialog:
         Window(
             *get_widgets(),
             TextInput(
+                id="title",
+                type_factory=fixed_size_64,
+                on_error=invalid_input,
+                on_success=change_page),
+            state=to_state.get(where).title,
+            getter=[get_form_text]
+        ),
+        Window(
+            *get_widgets(),
+            TextInput(
                 id="description",
                 type_factory=fixed_size_1024,
                 on_error=invalid_input,
@@ -114,17 +79,7 @@ def get_dialog(where: str) -> Dialog:
             state=to_state.get(where).description,
             getter=[get_form_text]
         ),
-        *order_windows,
-        Window(
-            *get_widgets(),
-            TextInput(
-                id="title",
-                type_factory=fixed_size_64,
-                on_error=invalid_input,
-                on_success=change_page),
-            state=to_state.get(where).title,
-            getter=[get_form_text]
-        ),
+
         Window(
             Button(
                 text=Const("Удалить фото"),
@@ -138,6 +93,45 @@ def get_dialog(where: str) -> Dialog:
                 content_types=[types.ContentType.ANY]
             ),
             state=to_state.get(where).photo,
+            getter=[get_form_text]
+        ),
+        Window(
+            Checkbox(
+                checked_text=Const("Торг уместен: Да ✅"),
+                unchecked_text=Const("Торг уместен: Нет ❌"),
+                id="negotiable",
+                default=False,
+                when="show_checkbox"
+            ),
+            Radio(
+                checked_text=Format("✔️ {item[0]}"),
+                unchecked_text=Format("{item[0]}"),
+                id="currency_code",
+                item_id_getter=operator.itemgetter(1),
+                items="currencies",
+                on_click=currency_selected
+            ),
+            *get_widgets(),
+            MessageInput(
+                func=price_validator,
+                content_types=types.ContentType.TEXT
+            ),
+            state=to_state.get(where).price,
+            getter=[get_form_text, get_currency_data]
+        ),
+        Window(
+            Button(
+                text=Const("Удалить контакт"),
+                id="delete_contact",
+                when=contact_exist,
+                on_click=delete_contact
+            ),
+            *get_widgets(),
+            MessageInput(
+                func=contact_validator,
+                content_types=types.ContentType.TEXT
+            ),
+            state=to_state.get(where).contact,
             getter=[get_form_text]
         ),
 

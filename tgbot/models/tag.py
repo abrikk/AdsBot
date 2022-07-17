@@ -8,12 +8,12 @@ ads_tags = Table(
     Base.metadata,
     Column(
         "tag_name",
-        ForeignKey("tags.tag_name", ondelete="CASCADE"),
+        ForeignKey("tags.tag_name", ondelete="CASCADE", onupdate="CASCADE"),
         primary_key=True
     ),
     Column(
         "post_id",
-        ForeignKey("ads.post_id", ondelete="CASCADE"),
+        ForeignKey("ads.post_id", ondelete="CASCADE", onupdate="CASCADE"),
         primary_key=True
     ),
 )

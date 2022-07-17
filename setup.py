@@ -8,6 +8,7 @@ from tgbot.handlers.edit_ad_status import register_ad_status_handler
 from tgbot.handlers.edit_buy_and_sell.dialogs import edit_sell_ad_dialog, edit_buy_ad_dialog
 from tgbot.handlers.edit_buy_and_sell.my_ads import my_ads_dialog
 from tgbot.handlers.edit_buy_and_sell.show_my_ad import show_my_ad_dialog
+from tgbot.handlers.group.post_reactions import register_post_reaction
 from tgbot.handlers.main_handler import main_dialog
 from tgbot.handlers.admin.search_user import register_inline_mode
 from tgbot.handlers.start import register_start
@@ -32,6 +33,7 @@ def register_all_dialogs(dialog_registry: DialogRegistry):
 
 
 def register_all_handlers(dp: Dispatcher):
+    register_post_reaction(dp)
     register_show_product(dp)
     register_start(dp)
     register_test(dp)

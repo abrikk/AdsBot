@@ -27,7 +27,8 @@ class PostAd(Base):
     tags = relationship(
         "Tag",
         secondary=ads_tags,
-        lazy="selectin"
+        lazy="selectin",
+        passive_deletes="all"
     )
 
     related_messages = relationship(

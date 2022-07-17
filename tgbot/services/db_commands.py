@@ -79,7 +79,9 @@ class DBCommands:
         return request.scalars().all()
 
     async def get_tags(self):
-        sql = select(Tag.tag_name).order_by(Tag.created_at)
+        sql = select(Tag.tag_name).where(
+            Tag.tag_name.not_in(("продам", "куплю"))
+        ).order_by(Tag.created_at)
         request = await self.session.execute(sql)
         return request.scalars().all()
 

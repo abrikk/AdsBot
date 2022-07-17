@@ -23,7 +23,7 @@ async def get_edit_text(dialog_manager: DialogManager, **_kwargs):
     limits: dict = {
         "tag_limit": tag,
         "contact_limit": contact,
-        "pic_limit": pic,
+        "pic_limit": len(post_ad.photos_ids.split(",")) if post_ad.photos_ids else 0,
         "post_limit": post
     }
 
@@ -35,7 +35,7 @@ async def get_edit_text(dialog_manager: DialogManager, **_kwargs):
         "currency_code": post_ad.currency_code,
         "negotiable": post_ad.negotiable,
         "title": post_ad.title,
-        "photos_ids": post_ad.photos_ids.split(","),
+        "photos_ids": post_ad.photos_ids.split(",") if post_ad.photos_ids else []
     }
 
     data.update(limits)
@@ -49,7 +49,7 @@ async def get_edit_text(dialog_manager: DialogManager, **_kwargs):
         ad = PurchaseAd(**data)
 
     return {
-        "form_text": ad.to_text(),
+        "form_text": ad.to_text(where="edit"),
         "page": get_active_section(state),
         "show_checkbox": isinstance(ad, SalesAd)
     }

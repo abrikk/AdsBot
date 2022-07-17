@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Column, String, ForeignKey
+from sqlalchemy import Column, BigInteger, ForeignKey
 
 from tgbot.services.db_base import Base
 
@@ -12,4 +12,4 @@ class RelatedMessage(Base):
     __mapper_args__ = {"eager_defaults": True}
 
     def __repr__(self):
-        return f'Main ID (ID: {self.main_id} - {self.another_ids})'
+        return f'Main ID (ID: {self.post_id} - {self.message_id})'

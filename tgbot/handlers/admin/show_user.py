@@ -42,11 +42,12 @@ async def set_default_data(_, dialog_manager: DialogManager):
 
 
 async def get_show_user_text(dialog_manager: DialogManager, **_kwargs) -> dict:
-    user_id: int = int(dialog_manager.current_context().start_data.get("user_id"))
+    searched_user_id: int = int(dialog_manager.current_context().start_data.get("user_id"))
     session = dialog_manager.data.get("session")
-    user: User = await session.get(User, user_id)
-    if user.restricted_till:
-        restricted_till = f"{user.restricted_till.strftime('%d.%m.%Y %H:%M:%S')}\n"
+    user: User = dialog_manager.data.get("user")
+    searched_user: User = await session.get(User, searched_user_id)
+    if searched_user.restricted_till:
+        restricted_till = f"{searched_user.restricted_till.strftime('%d.%m.%Y %H:%M:%S')}\n"
     else:
         restricted_till = "нет ограничений\n"
 
@@ -55,18 +56,18 @@ async def get_show_user_text(dialog_manager: DialogManager, **_kwargs) -> dict:
                  "📯 Роль: {role}\n"
                  "⚠️ Ограничен до: {restricted_till}"
                  "🗓 Дата регистрации: {created_at}").format(
-        id=hcode(user.user_id),
-        name=user.first_name + (user.last_name and " " + user.last_name or ""),
-        role=hcode(user.role),
+        id=hcode(searched_user.user_id),
+        name=searched_user.first_name + (searched_user.last_name and " " + searched_user.last_name or ""),
+        role=hcode(searched_user.role),
         restricted_till=hcode(restricted_till),
-        created_at=hcode(user.created_at.strftime('%d.%m.%Y %H:%M:%S'))
+        created_at=hcode(searched_user.created_at.strftime('%d.%m.%Y %H:%M:%S'))
     )
-    available_roles = (
-        ("Владелец", OWNER),
-        ("Администратор", ADMIN),
+    available_roles = [
         ("Пользователь", USER),
         ("Забанен", BANNED)
-    )
+    ]
+    if user.role == OWNER:
+        available_roles.append(("Администратор", ADMIN))
 
     restrict_options: list = [(i + 'д', i) for i in ('1', '3', '7', '14', '30')]
 
@@ -128,8 +129,6 @@ async def change_post_limit_value(_call: types.CallbackQuery, widget: ManagedCou
 
 
 async def set_default_post_limit(call: types.CallbackQuery, widget: ManagedCheckboxAdapter, manager: DialogManager):
-    is_checked: bool = not widget.is_checked()
-    await widget.set_checked(event=call, checked=is_checked)
     user_id: int = int(manager.current_context().start_data.get("user_id"))
     session = manager.data.get("session")
     db: DBCommands = manager.data.get("db_commands")
@@ -185,7 +184,7 @@ show_user_dialog = Dialog(
         ),
         Group(
             Radio(
-                checked_text=Format("✔️ {item[0]}"),
+                checked_text=Format("✅️ {item[0]}"),
                 unchecked_text=Format("{item[0]}"),
                 id="user_role",
                 item_id_getter=operator.itemgetter(1),

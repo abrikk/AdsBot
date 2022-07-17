@@ -109,7 +109,7 @@ async def add_del_tags(_message: types.Message, _widget: TextInput, manager: Dia
         case _:
             tags_obj: list[Tag] = [
                 await session.get(Tag, tag_name) for tag_name in tags
-                if await session.get(Tag, tag_name)
+                if tag_name not in ("продам", "куплю") and session.get(Tag, tag_name)
             ]
             for tag in tags_obj:
                 await session.delete(tag)

@@ -6,7 +6,27 @@ from tgbot.filters.admin import AdminFilter
 from tgbot.models.user import User
 
 
-async def default_query(query: types.InlineQuery, db_commands):
+async def all_queries(query: types.InlineQuery):
+    bot = query.bot.me
+    involved_text = "Присоединяйся! "
+    results = [
+        types.InlineQueryResultArticle(
+            id=str(user.user_id),
+            title="Поделиться ботом 🌐",
+            description="Нажмите на кнопку чтобы поделиться ботом в текущий чат",
+            input_message_content=types.InputTextMessageContent(
+                message_text="{name}: {id}".format(
+                    name=quote_html(user.first_name),
+                    id=hcode(user.user_id)
+                )
+            )
+        )
+        for user in users
+    ]
+    await query.answer(results=results, cache_time=3, is_personal=True, next_offset="")
+
+
+async def search_user(query: types.InlineQuery, db_commands):
     query_offset = int(query.offset) if query.offset else 0
     users: list[User] = (await db_commands.get_users(
         user_id=query.from_user.id,
@@ -36,5 +56,5 @@ async def default_query(query: types.InlineQuery, db_commands):
 
 
 def register_inline_mode(dp: Dispatcher):
-    dp.register_inline_handler(default_query, Text(contains="пользователи"), AdminFilter(),
+    dp.register_inline_handler(search_user, Text(contains="пользователи"), AdminFilter(),
                                ChatTypeFilter(types.ChatType.SENDER))

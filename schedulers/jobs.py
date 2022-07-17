@@ -2,12 +2,9 @@ from aiogram import Bot
 from sqlalchemy.orm import sessionmaker
 
 from tgbot.constants import ACTIVE, INACTIVE
+from tgbot.handlers.buy_and_sell.form import make_link_to_post
 from tgbot.keyboards.inline import confirm_post
 from tgbot.models.post_ad import PostAd
-
-
-def make_link_to_post(channel_id: int, post_id: int):
-    return f"https://t.me/c/{str(channel_id).removeprefix('-100')}/{post_id}"
 
 
 async def ask_if_active(user_id: int, post_id: int, channel_id: int, bot: Bot):
@@ -22,10 +19,12 @@ async def ask_if_active(user_id: int, post_id: int, channel_id: int, bot: Bot):
 async def check_if_active(user_id: int, post_id: int, channel_id: int, bot: Bot, session: sessionmaker):
     async with session() as session:
         post_ad: PostAd = await session.get(PostAd, post_id)
-        ptint(post_ad.related_messages)
         if post_ad.status == ACTIVE:
             post_ad.status = INACTIVE
             await session.commit()
+            if post_ad.related_messages:
+                for message in post_ad.related_messages:
+                    await bot.delete_message(chat_id=channel_id, message_id=message.message_id)
             await bot.delete_message(chat_id=channel_id, message_id=post_id)
             await bot.send_message(
                 chat_id=user_id,
