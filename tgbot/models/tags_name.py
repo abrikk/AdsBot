@@ -12,4 +12,4 @@ class TagName(Base):
     __mapper_args__ = {"eager_defaults": True}
 
     def __repr__(self):
-        return f'POST ID (ID: {self.post_id} - {self.message_id})'
+        return f'TagName - type: {self.type} - name: {self.name}'

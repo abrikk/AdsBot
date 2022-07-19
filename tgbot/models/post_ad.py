@@ -1,8 +1,21 @@
-from sqlalchemy import Column, BigInteger, String, TIMESTAMP, func, Integer, Boolean, ForeignKey
+from sqlalchemy import Column, BigInteger, String, TIMESTAMP, func, Integer, Boolean, ForeignKey, Table
 from sqlalchemy.orm import relationship
-
-from tgbot.models.tag_types import ads_tags
 from tgbot.services.db_base import Base
+
+ads_tags = Table(
+    "ads_tags",
+    Base.metadata,
+    Column(
+        "id",
+        ForeignKey("tag_name.id", ondelete="CASCADE", onupdate="CASCADE"),
+        primary_key=True
+    ),
+    Column(
+        "post_id",
+        ForeignKey("ads.post_id", ondelete="CASCADE", onupdate="CASCADE"),
+        primary_key=True
+    ),
+)
 
 
 class PostAd(Base):
@@ -25,7 +38,7 @@ class PostAd(Base):
                         server_default=func.now())
 
     tags = relationship(
-        "Tag",
+        "TagName",
         secondary=ads_tags,
         lazy="selectin",
         passive_deletes="all"

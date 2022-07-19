@@ -1,23 +1,7 @@
-from sqlalchemy import Column, String, TIMESTAMP, func, Table, ForeignKey, BigInteger
+from sqlalchemy import Column, String, TIMESTAMP, func
 from sqlalchemy.orm import relationship
 
 from tgbot.services.db_base import Base
-
-
-ads_tags = Table(
-    "ads_tags",
-    Base.metadata,
-    Column(
-        "tag_id",
-        ForeignKey("tags.id", ondelete="CASCADE", onupdate="CASCADE"),
-        primary_key=True
-    ),
-    Column(
-        "post_id",
-        ForeignKey("ads.post_id", ondelete="CASCADE", onupdate="CASCADE"),
-        primary_key=True
-    ),
-)
 
 
 class TagType(Base):
