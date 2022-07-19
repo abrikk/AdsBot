@@ -3,6 +3,7 @@ from aiogram.dispatcher.filters.state import StatesGroup, State
 
 class Main(StatesGroup):
     main = State()
+    make_ad = State()
 
 
 class AdminPanel(StatesGroup):
@@ -11,6 +12,15 @@ class AdminPanel(StatesGroup):
     tag = State()
     add_tag = State()
     del_tag = State()
+
+
+class Form(StatesGroup):
+    type = State()
+    tag = State()
+    description = State()
+    photo = State()
+    price = State()
+    contact = State()
 
 
 class Buy(StatesGroup):

@@ -1,7 +1,7 @@
 import copy
+import itertools
 from typing import Union, Dict, Any
 
-import phonenumbers
 from aiogram import types
 from aiogram_dialog import DialogManager, ShowMode, Data, StartMode
 from aiogram_dialog.manager.protocols import ManagedDialogAdapterProto
@@ -11,6 +11,8 @@ from aiogram_dialog.widgets.managed import ManagedWidgetAdapter
 from aiogram_dialog.widgets.text import Format, Const
 from aiogram_dialog.widgets.when import Whenable
 
+from tgbot.config import Config
+from tgbot.misc.ad import Ad
 from tgbot.misc.states import Sell, Buy, Preview, ConfirmAd, Main, ShowMyAd, EditSell, EditBuy
 from tgbot.models.post_ad import PostAd
 from tgbot.services.db_commands import DBCommands
@@ -184,38 +186,28 @@ class RepeatedNumberError(Exception):
     pass
 
 
-async def contact_validator(message: types.Message, dialog: ManagedDialogAdapterProto, manager: DialogManager):
+async def contact_validator(message: types.Message, _dialog: ManagedDialogAdapterProto, manager: DialogManager):
     contact_limit: int = manager.current_context().widget_data.get('contact_limit')
     try:
-        phone_number = message.text
-        contact_data = manager.current_context().widget_data.setdefault('contacts', [])
-        if not phone_number.startswith('+'):
-            phone_number = '+' + phone_number
-        parsed_number = phonenumbers.parse(phone_number)
-        if phone_number in contact_data:
-            raise RepeatedNumberError
-        # shallow check whether the phone number is invalid
-        if phonenumbers.is_possible_number(parsed_number):
-            # deep check whether the phone number is invalid
-            if phonenumbers.is_valid_number(parsed_number):
-                if len(contact_data) < contact_limit:
-                    contact_data.append(phone_number.replace(" ", ""))
-                else:
-                    contact_data[-1] = phone_number.replace(" ", "")
-                if len(contact_data) == contact_limit:
-                    await dialog.next()
-            else:
-                raise ValueError
-        else:
+        phone_number = message.text.replace(' ', '')
+
+        if phone_number.startswith('+'):
+            phone_number.removeprefix('+')
+        if not phone_number.isdigit():
             raise ValueError
 
-    except phonenumbers.NumberParseException:
-        # the input is really gibberish
-        manager.show_mode = ShowMode.EDIT
-        await message.answer("Вы ввели не валидный номер! Попробуйте еще раз.")
+        phone_number = '+' + phone_number
+        contact_data = manager.current_context().widget_data.setdefault('contacts', [])
+
+        if phone_number in contact_data:
+            raise RepeatedNumberError
+        if len(contact_data) < contact_limit:
+            contact_data.append(phone_number)
+        else:
+            contact_data[-1] = phone_number
     except ValueError:
         manager.show_mode = ShowMode.EDIT
-        await message.answer("Вы ввели не валидный номер! Попробуйте еще раз.")
+        await message.answer("Вы ввели неверный формат номера телефона. Попробуйте еще раз.")
     except RepeatedNumberError:
         manager.show_mode = ShowMode.EDIT
         await message.answer("Вы уже ввели этот номер.")
@@ -223,14 +215,28 @@ async def contact_validator(message: types.Message, dialog: ManagedDialogAdapter
 
 async def pic_validator(message: types.Message, _dialog: ManagedDialogAdapterProto, manager: DialogManager):
     pic_limit: int = manager.current_context().widget_data.get('pic_limit')
+    if pic_limit == 0:
+        return []
+
     match message.content_type:
         case types.ContentType.PHOTO:
+
             photo = message.photo[-1]
             photos_data = manager.current_context().widget_data.setdefault('photos_ids', [])
-            if len(photos_data) <= pic_limit:
+            photos_unique_ids = manager.current_context().widget_data.setdefault('photos_unique_ids', [])
+
+            if photo.file_unique_id in photos_unique_ids:
+                manager.show_mode = ShowMode.EDIT
+                await message.answer("Эта картинка уже имеется в объявление. Отправьте другое.")
+                return
+
+            if len(photos_data) < pic_limit:
                 photos_data.append(photo.file_id)
+                photos_unique_ids.append(photo.file_unique_id)
             else:
                 photos_data[-1] = photo.file_id
+                photos_unique_ids[-1] = photo.file_unique_id
+
         case _:
             manager.show_mode = ShowMode.EDIT
             await message.answer("Вы ввели не валидную картинку! Попробуйте еще раз.")
@@ -238,13 +244,7 @@ async def pic_validator(message: types.Message, _dialog: ManagedDialogAdapterPro
 
 # Buttons and dialogs
 async def set_default(_, dialog_manager: DialogManager):
-    state = dialog_manager.current_context().state.state.split(":")[0]
-    # if state == "Sell":
-    #     dialog_manager.current_context().widget_data.setdefault("tags", ["продам"])
-    # elif state == "Buy":
-    #     dialog_manager.current_context().widget_data.setdefault("tags", ["куплю"])
     await dialog_manager.dialog().find('currency_code').set_checked(event="", item_id="UAH")
-    dialog_manager.current_context().widget_data['currency'] = "₴"
 
 
 async def set_edit_default(_, dialog_manager: DialogManager):
@@ -257,18 +257,18 @@ async def set_edit_default(_, dialog_manager: DialogManager):
     limits: dict = {
         "tag_limit": tag,
         "contact_limit": contact,
-        "pic_limit": len(post_ad.photos_ids.split(",")) if post_ad.photos_ids else 0,
+        "pic_limit": len(post_ad.related_messages) if post_ad.related_messages else 0,
         "post_limit": post
     }
 
-    dialog_manager.current_context().widget_data['state'] = [
-        post_ad.post_type.capitalize(),
-        dialog_manager.current_context().state.state.split(":")[-1]
-    ]
     dialog_manager.current_context().widget_data['post_id'] = post_ad.post_id
     dialog_manager.current_context().widget_data['tags'] = [tag.tag_name for tag in post_ad.tags]
     dialog_manager.current_context().widget_data['contacts'] = post_ad.contacts.split(',') if post_ad.contacts else []
-    dialog_manager.current_context().widget_data['photos_ids'] = post_ad.photos_ids.split(",") if post_ad.photos_ids else []
+    if post_ad.related_messages:
+        photos_ids = [m.photo_file_id for m in post_ad.related_messages]
+    else:
+        photos_ids = []
+    dialog_manager.current_context().widget_data['photos_ids'] = photos_ids
     dialog_manager.current_context().widget_data.update(limits)
 
     # ToDo deal with bug with checkbox
@@ -288,11 +288,10 @@ async def get_currency_data(**_kwargs):
 
 async def check_required_fields(call: types.CallbackQuery, button: Button, manager: DialogManager):
     widget_data: dict = manager.current_context().widget_data
-    state = manager.current_context().state.state.split(':')[0].lower()
 
     if button.widget_id == 'post':
-        if REQUIRED_FIELDS.get(state).issubset(widget_data.keys()):
-            state_class = manager.current_context().state.state.split(":")[0]
+        state_class = manager.current_context().state.state.split(':')[0]
+        if REQUIRED_FIELDS.get(state_class.lower()).issubset(widget_data.keys()):
 
             data: dict = copy.deepcopy(widget_data)
             data.pop('sg_tags', None)
@@ -303,18 +302,89 @@ async def check_required_fields(call: types.CallbackQuery, button: Button, manag
             await call.answer("Вы не заполнили все обязательные поля.")
     else:
         start_data = manager.current_context().start_data
+        obj = manager.event
         db: DBCommands = manager.data.get("db_commands")
         session = manager.data.get("session")
+        config: Config = manager.data.get("config")
 
         post_id = int(start_data.get("post_id"))
         post_ad: PostAd = await session.get(PostAd, post_id)
-
+        print("widget_data", widget_data)
         items_to_pop = ['post_id', 'currency', 'sg_tags', 'state_class', 'tag_limit', 'contact_limit', 'pic_limit', 'post_limit']
         for item in items_to_pop:
             widget_data.pop(item, None)
 
         await update_ad(post_ad, widget_data, db)
-        await session.commit()
+
+        data: dict = {
+            "state_class": post_ad.post_type.capitalize(),
+            "tags": [tag.tag_name for tag in post_ad.tags],
+            "description": post_ad.description,
+            "contacts": post_ad.contacts.split(",") if post_ad.contacts else [],
+            "price": post_ad.price,
+            "currency_code": post_ad.currency_code,
+            "negotiable": post_ad.negotiable,
+            "title": post_ad.title,
+            "photos_ids": [m.photo_file_id for m in post_ad.related_messages] if post_ad.related_messages else [],
+            "mention": obj.from_user.get_mention()
+        }
+
+        ad: Ad = Ad(**data)
+
+        if post_ad.related_messages:
+            print("_______________________")
+            for m in post_ad.related_messages:
+                print(m.message_id, m.photo_file_id)
+            for k in post_ad.photos_ids.split(",")[:-1]:
+                print(k)
+            print(post_ad.related_messages)
+            print(post_ad.photos_ids.split(","))
+            await call.message.answer_photo(post_ad.photos_ids.split(",")[-1])
+            print("_______________________")
+        else:
+            await call.bot.edit_message_text(
+                chat_id=config.tg_bot.channel_id,
+                message_id=post_ad.post_id,
+                text=ad.post()
+            )
+
+        #     post_id_photo_id = itertools.zip_longest(post_ad.related_messages, post_ad.photos_ids.split(","))
+        #     for message, photo_id in post_id_photo_id:
+        #         if photo_id:
+        #             await call.bot.edit_message_media(
+        #                 chat_id=config.tg_bot.channel_id,
+        #                 message_id=message.message_id,
+        #                 media=types.InputMedia(media=photo_id)
+        #             )
+        #         else:
+        #             await call.bot.delete_message(
+        #                 chat_id=config.tg_bot.channel_id,
+        #                 message_id=message.message_id
+        #             )
+        #             await session.delete(message)
+        #
+        # data: dict = {
+        #     "state_class": post_ad.post_type.capitalize(),
+        #     "tags": [tag.tag_name for tag in post_ad.tags],
+        #     "description": post_ad.description,
+        #     "contacts": post_ad.contacts.split(",") if post_ad.contacts else [],
+        #     "price": post_ad.price,
+        #     "currency_code": post_ad.currency_code,
+        #     "negotiable": post_ad.negotiable,
+        #     "title": post_ad.title,
+        #     "photos_ids": post_ad.photos_ids.split(",") if post_ad.photos_ids else [],
+        #     "mention": obj.from_user.get_mention()
+        # }
+        #
+        # ad: Ad = Ad(**data)
+        #
+        # await call.bot.edit_message_caption(
+        #     chat_id=config.tg_bot.channel_id,
+        #     message_id=post_ad.post_id,
+        #     caption=ad.post()
+        # )
+        #
+        # await session.commit()
         await call.answer("Объявление обновлено!")
         await manager.start(state=ShowMyAd.true, data={"post_id": post_id}, mode=StartMode.RESET_STACK)
 
@@ -341,7 +411,6 @@ async def update_ad(post_ad: PostAd, dict_to_update: dict, db: DBCommands):
 async def show_preview(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
     state_class = manager.current_context().state.state.split(":")[0]
     widget_data: dict = manager.current_context().widget_data
-    print(widget_data)
     data: dict = copy.deepcopy(widget_data)
     data.pop('currency_code', None)
     data.pop('sg_tags', None)
@@ -401,4 +470,3 @@ async def go_back_page(_call: types.CallbackQuery, _button: Button, manager: Dia
 
 def make_link_to_post(channel_id: int, post_id: int):
     return f"https://t.me/c/{str(channel_id).removeprefix('-100')}/{post_id}"
-

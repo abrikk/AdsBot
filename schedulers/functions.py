@@ -7,9 +7,9 @@ from schedulers.jobs import ask_if_active, check_if_active
 
 
 def create_jobs(scheduler: AsyncIOScheduler, user_id, post_id, channel_id):
-    time_to_ask = datetime.datetime.now() + datetime.timedelta(seconds=10)
+    time_to_ask = datetime.datetime.now() + datetime.timedelta(hours=10)
 
-    time_to_check = datetime.datetime.now() + datetime.timedelta(seconds=20)
+    time_to_check = datetime.datetime.now() + datetime.timedelta(hours=20)
 
     scheduler.add_job(
         ask_if_active,

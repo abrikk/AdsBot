@@ -2,7 +2,7 @@ from sqlalchemy import select, or_, update, and_
 
 from tgbot.models.post_ad import PostAd
 from tgbot.models.restriction import Restriction
-from tgbot.models.tag import Tag
+from tgbot.models.tag_types import Tag
 from tgbot.models.user import User
 
 

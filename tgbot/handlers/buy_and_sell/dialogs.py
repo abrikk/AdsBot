@@ -13,11 +13,30 @@ from tgbot.handlers.buy_and_sell.form import price_validator, get_currency_data,
     delete_contact, delete_pic
 from tgbot.handlers.buy_and_sell.getters import get_final_text, on_confirm, get_form_text, get_tags_data
 from tgbot.misc.media_widget import DynamicMediaFileId
-from tgbot.misc.states import Main, Preview, ConfirmAd
-
+from tgbot.misc.states import Main, Preview, ConfirmAd, Form
 
 # getting dialog
 from tgbot.misc.temp_checkbox import Checkbox
+
+form_dialog = Dialog(
+    Window(
+        Radio(
+            checked_text=Format("✔️ {item[0]}"),
+            unchecked_text=Format("{item[0]}"),
+            id="ad_types",
+            item_id_getter=operator.itemgetter(1),
+            items="ad_types",
+            on_click=switch_to_tags
+        ),
+        Start(
+            text=Format("{back_btn}", when="back_btn"),
+            id="to_previous",
+            state=Main.make_ad
+        ),
+        state=Form.type,
+        getter=get_ad_types
+    )
+)
 
 
 def get_dialog(where: str) -> Dialog:

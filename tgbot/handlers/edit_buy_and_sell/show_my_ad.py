@@ -9,7 +9,7 @@ from aiogram_dialog.widgets.text import Format, Const
 from tgbot.config import Config
 from tgbot.constants import INACTIVE, ACTIVE
 from tgbot.handlers.buy_and_sell.form import make_link_to_post
-from tgbot.misc.ad import SalesAd, PurchaseAd
+from tgbot.misc.ad import Ad
 from tgbot.misc.states import ShowMyAd, MyAds, EditBuy, EditSell
 from tgbot.misc.temp_checkbox import Checkbox
 from tgbot.models.post_ad import PostAd
@@ -22,17 +22,8 @@ async def get_show_my_ad_text(dialog_manager: DialogManager, **_kwargs):
     start_data = dialog_manager.current_context().start_data
     session = dialog_manager.data.get("session")
     config: Config = dialog_manager.data.get("config")
-    db: DBCommands = dialog_manager.data.get("db_commands")
     post_id = int(start_data.get("post_id"))
     post_ad: PostAd = await session.get(PostAd, post_id)
-
-    tag, contact, pic, post = await db.get_values_of_restrictions()
-    limits: dict = {
-        "tag_limit": tag,
-        "contact_limit": contact,
-        "pic_limit": pic,
-        "post_limit": post
-    }
 
     data: dict = {
         "tags": [tag.tag_name for tag in post_ad.tags],
@@ -42,26 +33,24 @@ async def get_show_my_ad_text(dialog_manager: DialogManager, **_kwargs):
         "currency_code": post_ad.currency_code,
         "negotiable": post_ad.negotiable,
         "title": post_ad.title,
-        "photos_ids": post_ad.photos_ids.split(",") if post_ad.photos_ids else [],
+        "photos_ids": [m.photo_file_id for m in post_ad.related_messages] if post_ad.related_messages else [],
         "status": post_ad.status,
         "post_link": make_link_to_post(channel_id=config.tg_bot.channel_id, post_id=post_ad.post_id),
         "updated_at": post_ad.updated_at,
         "created_at": post_ad.created_at
     }
-    data.update(limits)
 
-    if post_ad.photos_ids:
+    if post_ad.related_messages:
+        dialog_manager.show_mode = ShowMode.SEND
         album = MediaGroup()
-        for photo_id in post_ad.photos_ids.split(","):
+        for photo_id in [m.photo_file_id for m in post_ad.related_messages]:
             album.attach_photo(photo=photo_id)
         await obj.bot.send_media_group(chat_id=obj.from_user.id, media=album)
 
-    if post_ad.post_type == "sell":
-        ad = SalesAd(**data)
-    else:
-        ad = PurchaseAd(**data)
-
-    dialog_manager.show_mode = ShowMode.SEND
+    ad: Ad = Ad(
+        state_class=post_ad.post_type.capitalize(),
+        **data
+    )
 
     return {"preview_text": ad.preview(where="edit")}
 
@@ -145,7 +134,10 @@ async def change_post_status(call: types.CallbackQuery, widget: ManagedCheckboxA
             "photos_ids": post_ad.photos_ids.split(",") if post_ad.photos_ids else [],
         }
 
-        ad = SalesAd(**data) if post_ad.post_type == "sell" else PurchaseAd(**data)
+        ad: Ad = Ad(
+            state_class=post_ad.post_type.capitalize(),
+            **data
+        )
 
         if ad.photos_ids:
             album = MediaGroup()

@@ -10,7 +10,7 @@ from aiogram_dialog.widgets.text import Format, Const
 
 from tgbot.misc.states import AdminPanel, Main
 from tgbot.models.restriction import Restriction
-from tgbot.models.tag import Tag
+from tgbot.models.tag_types import Tag
 from tgbot.services.db_commands import DBCommands
 
 

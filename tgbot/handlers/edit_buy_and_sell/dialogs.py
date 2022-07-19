@@ -126,7 +126,7 @@ def get_edit_dialog(where: str) -> Dialog:
                 when=contact_exist,
                 on_click=delete_contact
             ),
-            *get_widgets(),
+            *get_widgets(where='edit'),
             MessageInput(
                 func=contact_validator,
                 content_types=types.ContentType.TEXT

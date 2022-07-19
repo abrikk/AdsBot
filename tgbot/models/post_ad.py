@@ -1,7 +1,7 @@
 from sqlalchemy import Column, BigInteger, String, TIMESTAMP, func, Integer, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 
-from tgbot.models.tag import ads_tags
+from tgbot.models.tag_types import ads_tags
 from tgbot.services.db_base import Base
 
 
@@ -11,13 +11,13 @@ class PostAd(Base):
     post_id = Column(BigInteger, primary_key=True)
     post_type = Column(String(length=4))
     user_id = Column(BigInteger, nullable=False)
+    title = Column(String(length=128), nullable=True)
     description = Column(String(length=1024), nullable=False)
-    contacts = Column(String(length=128), nullable=False)
     price = Column(Integer, nullable=True)
+    contacts = Column(String(length=128), nullable=False)
     currency_code = Column(String(length=3), nullable=False)
     negotiable = Column(Boolean, nullable=True)
-    title = Column(String(length=128), nullable=True)
-    photos_ids = Column(String(length=512), nullable=True)
+    # photos_ids = Column(String(length=1024), nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True),
                         default=func.now(),

@@ -1,36 +1,34 @@
-from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 
-import flag
-import phonenumbers
 from aiogram.utils.markdown import hunderline, hbold, hitalic, hcode
 
 from tgbot.constants import ACTIVE, INACTIVE, REJECTED
 
 
 @dataclass
-class Ad(ABC):
-    tag_limit: int
-    contact_limit: int
-    pic_limit: int
-    post_limit: int
+class Ad:
+    state_class: str
 
     status: Optional[str] = None
     state: Optional[str] = None
-    state_class: str = ""
     tags: list[str] = field(default_factory=list)
     title: str = ""
     photos_ids: list[str] = field(default_factory=list)
+    photos_unique_ids: list[str] = field(default_factory=list)
     description: str = ""
     price: float | int = field(default_factory=float)
     contacts: list[str] = field(default_factory=list)
 
     currency_code: str = ""
-    # currency: str = {'USD': '$', 'EUR': '€', 'RUB': '₽', 'UAH': '₴'}.get(currency_code, "₴")
     negotiable: bool = False
     mention: str = ""
+
+    tag_limit: int = field(default=0)
+    contact_limit: int = field(default=0)
+    pic_limit: int = field(default=0)
+    post_limit: int = field(default=0)
 
     post_link: str = ""
     updated_at: datetime = field(default=datetime.today())
@@ -43,7 +41,7 @@ class Ad(ABC):
         contacts: str = self.contacts and self.humanize_phone_numbers() or '➖'
 
         if where == "edit" and self.pic_limit == 0:
-            photos_len: str = "Нет фото"
+            photos_len: str = "<code>Нет фото</code>"
         else:
             photos_len: str = self.photos_ids and str(len(self.photos_ids)) + ' шт' or '➖'
 
@@ -130,7 +128,7 @@ class Ad(ABC):
 
             case _:
                 if where == "edit" and self.pic_limit == 0:
-                    return '📷 Так как при создании объявления вы не добавляли фотки ' \
+                    return '⛔️ Так как при создании объявления вы не добавляли фотки ' \
                            'вашего товара или услуг вы не можете добавить фотки при ' \
                            'изменении. Чтобы добавить фотки создайте новое ' \
                            'объявление.\n\n'
@@ -156,15 +154,15 @@ class Ad(ABC):
             negotiable: None = None
 
         if self.tags:
-            preview_list.append(self.make_tags())
+            preview_list.append(("Теги: " + self.make_tags()))
         else:
             preview_list.append('Теги не указаны ❗️')
 
         if self.title:
-            preview_list.append(hbold(self.title))
+            preview_list.append(f"Заголовок: {hbold(self.title)}")
 
         if self.description:
-            preview_list.append(f"{hitalic(self.description)}")
+            preview_list.append(f"Описание: {hitalic(self.description)}")
         else:
             preview_list.append("Описание отсутствует ❗️")
 
@@ -224,7 +222,7 @@ class Ad(ABC):
             negotiable: None = None
 
         post_list: list[str] = [
-            self.make_tags(),
+            self.make_tags(self.state_class),
             f"{hitalic(self.description)}",
 
             f"Контактные данные: {self.humanize_phone_numbers()}",
@@ -234,7 +232,7 @@ class Ad(ABC):
         if self.title:
             post_list.insert(1, f"{hbold(self.title)}")
         if self.price:
-            post_list.append(f"{hcode(str(self.price) + ' ' + self.currency) + ' ' + negotiable or ''}")
+            post_list.insert(-2, f"{hcode(str(self.price) + ' ' + self.currency) + ' ' + negotiable or ''}")
 
         return '\n\n'.join(post_list)
 
@@ -243,14 +241,12 @@ class Ad(ABC):
         for number in self.contacts:
             if not number.startswith('+'):
                 number = '+' + number
-            number = phonenumbers.parse(number)
-            emoji = ' ' + flag.flag(f"{phonenumbers.region_code_for_country_code(number.country_code)}")
-            list_of_numbers.append(
-                hcode(phonenumbers.format_number(number, phonenumbers.PhoneNumberFormat.INTERNATIONAL)) + emoji)
+            list_of_numbers.append(hcode(number))
 
         return ", ".join(list_of_numbers)
 
     def make_tags(self, state_class: str = None) -> str:
+        print(state_class)
         tags = self.tags
         if state_class:
             tags.insert(0, "продам" if state_class == "Sell" else "куплю")

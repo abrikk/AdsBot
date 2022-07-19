@@ -1,8 +1,8 @@
 """initial
 
-Revision ID: 4a9e1bde1458
+Revision ID: 12c0c5efc2ad
 Revises: 
-Create Date: 2022-07-15 23:34:28.855102
+Create Date: 2022-07-19 13:16:38.112142
 
 """
 from alembic import op
@@ -12,9 +12,9 @@ import sqlalchemy as sa
 from sqlalchemy import orm
 
 from tgbot.models.restriction import Restriction
-from tgbot.models.tag import Tag
+from tgbot.models.tag_types import Tag
 
-revision = '4a9e1bde1458'
+revision = '12c0c5efc2ad'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -27,13 +27,12 @@ def upgrade() -> None:
                     sa.Column('post_id', sa.BigInteger(), nullable=False),
                     sa.Column('post_type', sa.String(length=4), nullable=True),
                     sa.Column('user_id', sa.BigInteger(), nullable=False),
+                    sa.Column('title', sa.String(length=128), nullable=True),
                     sa.Column('description', sa.String(length=1024), nullable=False),
-                    sa.Column('contacts', sa.String(length=128), nullable=False),
                     sa.Column('price', sa.Integer(), nullable=True),
+                    sa.Column('contacts', sa.String(length=128), nullable=False),
                     sa.Column('currency_code', sa.String(length=3), nullable=False),
                     sa.Column('negotiable', sa.Boolean(), nullable=True),
-                    sa.Column('title', sa.String(length=128), nullable=True),
-                    sa.Column('photos_ids', sa.String(length=512), nullable=True),
                     sa.Column('created_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'),
                               nullable=True),
                     sa.Column('updated_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'),
@@ -53,12 +52,14 @@ def upgrade() -> None:
                     sa.UniqueConstraint('order')
                     )
     op.create_table('tags',
-                    sa.Column('tag_name', sa.String(length=100), nullable=False),
+                    sa.Column('id', sa.BigInteger(), nullable=False),
+                    sa.Column('tag_type', sa.String(length=128), nullable=True),
+                    sa.Column('tag_name', sa.String(length=128), nullable=True),
                     sa.Column('created_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'),
                               nullable=True),
                     sa.Column('updated_at', sa.TIMESTAMP(timezone=True), server_default=sa.text('now()'),
                               nullable=True),
-                    sa.PrimaryKeyConstraint('tag_name')
+                    sa.PrimaryKeyConstraint('id')
                     )
     op.create_table('users',
                     sa.Column('user_id', sa.BigInteger(), nullable=False),
@@ -76,16 +77,18 @@ def upgrade() -> None:
                     sa.UniqueConstraint('username')
                     )
     op.create_table('ads_tags',
-                    sa.Column('tag_name', sa.String(length=100), nullable=False),
+                    sa.Column('tag_id', sa.BigInteger(), nullable=False),
                     sa.Column('post_id', sa.BigInteger(), nullable=False),
                     sa.ForeignKeyConstraint(['post_id'], ['ads.post_id'], onupdate='CASCADE', ondelete='CASCADE'),
-                    sa.ForeignKeyConstraint(['tag_name'], ['tags.tag_name'], onupdate='CASCADE', ondelete='CASCADE'),
-                    sa.PrimaryKeyConstraint('tag_name', 'post_id')
+                    sa.ForeignKeyConstraint(['tag_id'], ['tags.id'], onupdate='CASCADE', ondelete='CASCADE'),
+                    sa.PrimaryKeyConstraint('tag_id', 'post_id')
                     )
     op.create_table('related_message',
                     sa.Column('id', sa.BigInteger(), nullable=False),
                     sa.Column('post_id', sa.BigInteger(), nullable=True),
                     sa.Column('message_id', sa.BigInteger(), nullable=False),
+                    sa.Column('photo_file_id', sa.String(length=128), nullable=False),
+                    sa.Column('photo_file_unique_id', sa.String(length=64), nullable=False),
                     sa.ForeignKeyConstraint(['post_id'], ['ads.post_id'], ondelete='CASCADE'),
                     sa.PrimaryKeyConstraint('id')
                     )
@@ -93,14 +96,10 @@ def upgrade() -> None:
     bind = op.get_bind()
     session = orm.Session(bind=bind)
 
-    default_tags = ('продам', 'куплю', 'услуги', 'перевозки')
-
     default_restrictions = ((1, "tag", "Теги", 2),
                             (2, "contact", "Контакты", 2),
                             (3, "pic", "Картинки", 5),
                             (4, "post", "Посты", 3))
-
-    tags = [Tag(tag_name=tag) for tag in default_tags]
 
     restrictions = [
         Restriction(
@@ -113,8 +112,7 @@ def upgrade() -> None:
 
     session.add_all(
         (
-            *tags,
-            *restrictions
+            *restrictions,
         )
     )
     session.commit()
