@@ -3,7 +3,6 @@ from aiogram.types import MediaGroup
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from tgbot.config import Config
-from tgbot.constants import INACTIVE
 from tgbot.keyboards.inline import conf_cb
 # from tgbot.misc.ad import SalesAd, PurchaseAd
 from tgbot.models.post_ad import PostAd

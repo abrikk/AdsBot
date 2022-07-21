@@ -16,24 +16,19 @@ async def get_my_ads_text(dialog_manager: DialogManager, **_kwargs):
     if not my_ads:
         return {"my_ads_text": "У вас нету опубликованных объявлений."}
     text = f"Всего объявлений: {len(my_ads)}\n"
-    ads_data: list = list()
-    for title, desc, post_id in my_ads:
-        if title:
-            ads_data.append((title, post_id))
-        else:
-            ads_data.append((desc, post_id))
+    ads_data: list = [(desc, post_id) for desc, post_id in my_ads]
 
     return {
         "my_ads_text": text,
         "my_ads_data": ads_data,
         "show_scroll": len(my_ads) > 10,
-        "show_my_ads": len(my_ads) <= 10
+        "show_group": len(my_ads) <= 10
     }
 
 
 async def show_chosen_ad(_call: types.CallbackQuery, _widget: ManagedWidgetAdapter[Select], manager: DialogManager,
                          post_id: str):
-    await manager.start(state=ShowMyAd.true, data={"post_id": post_id})
+    await manager.start(state=ShowMyAd.true, data={"post_id": int(post_id)})
 
 
 my_ads_dialog = Dialog(
@@ -62,7 +57,7 @@ my_ads_dialog = Dialog(
             ),
             id="g_my_ads",
             width=1,
-            when="show_my_ads"
+            when="show_group"
         ),
         Start(
             text=Const("Назад"),

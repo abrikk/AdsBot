@@ -1,8 +1,7 @@
 from aiogram import Bot
 from sqlalchemy.orm import sessionmaker
 
-from tgbot.constants import ACTIVE, INACTIVE
-from tgbot.handlers.buy_and_sell.form import make_link_to_post
+from tgbot.handlers.create_ad.form import make_link_to_post
 from tgbot.keyboards.inline import confirm_post
 from tgbot.models.post_ad import PostAd
 

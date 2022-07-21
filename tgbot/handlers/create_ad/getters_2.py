@@ -7,7 +7,7 @@ from aiogram_dialog.widgets.kbd import Button
 
 from schedulers.functions import create_jobs
 from tgbot.config import Config
-from tgbot.handlers.buy_and_sell.form import get_active_section, get_current_file_id
+from tgbot.handlers.create_ad.form_2 import get_active_section, get_current_file_id
 # from tgbot.misc.ad import SalesAd, PurchaseAd
 from tgbot.misc.ad import Ad
 from tgbot.misc.states import Main

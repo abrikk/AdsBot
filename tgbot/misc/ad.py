@@ -1,23 +1,21 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
 
-from aiogram.utils.markdown import hunderline, hbold, hitalic, hcode
-
-from tgbot.constants import ACTIVE, INACTIVE, REJECTED
+from aiogram.utils.markdown import hitalic, hcode
 
 
 @dataclass
 class Ad:
     state_class: str
 
-    status: Optional[str] = None
-    state: Optional[str] = None
-    tags: list[str] = field(default_factory=list)
-    title: str = ""
-    photos_ids: list[str] = field(default_factory=list)
-    photos_unique_ids: list[str] = field(default_factory=list)
+    state: str = ''
+
+    heading: str = ""
+    tag_category: str = ""
+    tag_name: str = ""
+
     description: str = ""
+    photos: dict | list = field(default_factory=dict)
     price: float | int = field(default_factory=float)
     contacts: list[str] = field(default_factory=list)
 
@@ -35,7 +33,6 @@ class Ad:
     created_at: datetime = field(default=datetime.today())
 
     def to_text(self, where: str = None) -> str:
-        title: str = self.title or '➖'
         description: str = self.description or '➖'
         price: float | int | str = self.price or '➖'
         contacts: str = self.contacts and self.humanize_phone_numbers() or '➖'
@@ -43,79 +40,45 @@ class Ad:
         if where == "edit" and self.pic_limit == 0:
             photos_len: str = "<code>Нет фото</code>"
         else:
-            photos_len: str = self.photos_ids and str(len(self.photos_ids)) + ' шт' or '➖'
+            photos_len: str = self.photos and str(len(self.photos)) + ' шт' or '➖'
 
-        if self.state_class in ("Sell", "EditSell"):
+        if self.state_class in ("sell", "rent"):
             negotiable: str = '(торг уместен)' if self.negotiable else '(цена окончательна)'
         else:
             negotiable: None = None
 
-        ttags = self.state == 'tags' and hunderline('Теги') or 'Теги'
-        ttitle = self.state == 'title' and hunderline('Заголовок товара или услуг (опционально)') \
-                 or 'Заголовок товара или услуг (опционально)'
-        tdescription = self.state == 'description' and hunderline(
-            'Описание товара или услуг') or 'Описание товара или услуг'
-        tphoto = self.state == 'photo' and \
-                 hunderline('Фото (опционально)') or 'Фото (опционально)'
-        tcontact = self.state == 'contact' and hunderline('Контактные данные') \
-                   or 'Контактные данные'
-        if self.state_class in ("Sell", "EditSell"):
-            tprice = self.state == 'price' and hunderline('Цена') or 'Цена'
+        tdescription = 'Описание товара или услуг'
+        tphoto = 'Фото (опционально)'
+        tcontact = 'Контактные данные'
+        if self.state_class == "exchange":
+            return (self.current_heading(where=where) +
+                    f"1. {tdescription}: {hitalic(description)}\n"
+                    f"2. {tphoto}: {photos_len}\n"
+                    f"3. {tcontact}: {contacts}\n")
         else:
-            tprice = self.state == 'price' and hunderline(
-                'Желаемая цена (опционально)') or 'Желаемая цена (опционально)'
+            if self.state_class in ("sell", "rent"):
+                tprice = 'Цена'
+            else:
+                tprice = 'Желаемая цена (опционально)'
 
-        return (self.current_heading(where=where) +
-                f"1. {ttags}: {self.make_tags()}\n"
-                f"2. {ttitle}: {hbold(title)}\n"
-                f"3. {tdescription}: {hitalic(description)}\n"
-                f"4. {tphoto}: {photos_len}\n"
-                f"5. {tprice}: {hcode(str(price) + ' ' + (self.price and self.currency or ''))} {self.price and negotiable or ''}\n"
-                f"6. {tcontact}: {contacts}\n")
+            return (self.current_heading(where=where) +
+                    f"1. {tdescription}: {hitalic(description)}\n"
+                    f"2. {tphoto}: {photos_len}\n"
+                    f"3. {tprice}: {hcode(str(price) + ' ' + (self.price and self.currency or ''))} {self.price and negotiable or ''}\n"
+                    f"4. {tcontact}: {contacts}\n")
 
     def current_heading(self, where: str = None) -> str:
         match self.state:
-            case "tags":
-                if not self.tags and self.state_class == "Sell":
-                    return '#️⃣  Выберите тег своего товара или услуг нажав по кнопке ' \
-                           f'ниже (макс. <code>{self.tag_limit}</code>):\n\n'
-                elif not self.tags and self.state_class == "Buy":
-                    return '#️⃣  Выберите тег товара или услуг который вы хотите ' \
-                           f'купить нажав по кнопке ниже (макс. <code>{self.tag_limit}</code>):\n\n'
-                else:
-                    return '#️⃣  Чтобы удалить тег нажмите на кнопку удалить тег ниже' \
-                           f'(макс. <code>{self.tag_limit}</code>).\n\n'
-
-            case 'title':
-                if not self.title and self.state_class == "Sell":
-                    return '🔡 Введите заголовок товара или услуг (этот раздел можно пропустить):\n\n'
-                elif not self.title and self.state_class == "Buy":
-                    return '🔡 Введите заголовок товара или услуг который вы хотите купить ' \
-                           '(этот раздел можно пропустить):\n\n'
-                else:
-                    return '🔡 Чтобы изменить заголовок товара или услуг, просто отправьте' \
-                           ' новое название.\n\n'
-
             case 'description':
-                if not self.description and self.state_class == "Sell":
-                    return '📝 Введите описание товара или услуг:\n\n'
-                elif not self.description and self.state_class == "Buy":
-                    return '📝 Введите описание товара или услуг которое ' \
-                           'вы хотите купить:\n\n'
-                else:
-                    return '📝 Чтобы изменить описание товара или услуг, просто отправьте ' \
-                           'новое описание.\n\n'
+                return '📝 Введите описание:\n\n'
 
             case 'price':
-                if not self.price and self.state_class == "Sell":
-                    return '💸 Введите цену товара или услуг, так же укажите ' \
-                           'валюту и уместен ли торг:\n\n'
-                elif not self.price and self.state_class == "Buy":
-                    return '💸 Введите желаемую цену товара или услуг и укажите ' \
-                           'валюту:\n\n'
+                if self.state_class in ("sell", "rent", "exchange"):
+                    return '💸 Введите цену, так же укажите ' \
+                               'валюту и уместен ли торг:\n\n'
                 else:
-                    return '💸 Чтобы изменить цену товара или услуг, просто отправьте ' \
-                           'новую цену.\n\n'
+                    return '💸 Введите цену, так же укажите ' \
+                           'валюту:\n\n'
 
             case 'contact':
                 if not self.contacts:
@@ -132,107 +95,87 @@ class Ad:
                            'вашего товара или услуг вы не можете добавить фотки при ' \
                            'изменении. Чтобы добавить фотки создайте новое ' \
                            'объявление.\n\n'
-                elif not self.photos_ids and self.state_class == "Sell":
-                    return '📷 Отправьте картинки товара или услуг по одному ' \
-                           '(этот раздел можно пропустить).\n' \
+                elif not self.photos and self.state_class == "exchange":
+                    return '📷 Отправьте фото товара или услуг которое вы хотите' \
+                           ' обменять (этот раздел можно пропустить).\n' \
                            f'P.s. Максимальное количество картинок: <code>{self.pic_limit}</code>:\n\n'
-                elif not self.photos_ids:
-                    return '📷 Отправьте картинки товара или услуг который вы хотите купить ' \
+                elif not self.photos:
+                    return '📷 Отправьте фото ' \
                            'по одному (этот раздел можно пропустить).\n' \
                            f'P.s. Максимальное количество картинок: <code>{self.pic_limit}</code>:\n\n'
                 else:
-                    return '📷 Чтобы изменить картинку товара или услуг, просто отправьте ' \
+                    return '📷 Чтобы изменить картинку, просто отправьте ' \
                            'новую картинку, а чтобы удалить картинку нажми на ' \
                            'кнопку ниже.\n' \
                            f'P.s. Максимальное количество картинок: <code>{self.pic_limit}</code>:\n\n'
 
     def preview(self, where: str = None) -> str:
         preview_list: list[str] = []
-        if self.state_class in ("Sell", "EditSell"):
+        if self.state_class in ("sell", "rent"):
             negotiable: str = '(торг уместен)' if self.negotiable else '(цена окончательна)'
         else:
             negotiable: None = None
 
-        if self.tags:
-            preview_list.append(("Теги: " + self.make_tags()))
-        else:
-            preview_list.append('Теги не указаны ❗️')
-
-        if self.title:
-            preview_list.append(f"Заголовок: {hbold(self.title)}")
-
-        if self.description:
-            preview_list.append(f"Описание: {hitalic(self.description)}")
-        else:
-            preview_list.append("Описание отсутствует ❗️")
+        preview_list.append(f"Описание: {self.description}")
 
         if self.price and self.state_class in ("Sell", "EditSell"):
-            preview_list.append(f"Стоимость: {hcode(str(self.price) + ' ' + (self.price and self.currency or ''))} "
+            preview_list.append(f"Стоимость: {str(self.price) + ' ' + (self.price and self.currency or '')} "
                                 f"{self.price and negotiable or ''}")
-        elif not self.price and self.state_class in ("Sell", "EditSell"):
-            preview_list.append("Цена не указана ❗️")
         elif self.price and self.state_class not in ("Sell", "EditSell"):
             preview_list.append(f"Желаемая цена: {hcode(str(self.price) + ' ' + self.currency)}")
 
-        if self.contacts:
-            preview_list.append(f"Контактные данные: {self.humanize_phone_numbers()}")
-        else:
-            preview_list.append("Контактные данные не указаны ❗️")
+        preview_list.append(f"Контактные данные: {self.humanize_phone_numbers()}")
 
-        if self.photos_ids:
-            preview_list.append(f"Картинки: {len(self.photos_ids)} шт")
+        if self.photos:
+            preview_list.append(f"Картинки: {len(self.photos)} шт")
 
         if where == "edit":
             stat_text: str = (f"Объявление: {self.post_link}\n"
-                              f"Статус объявления: {self.get_status()}\n"
                               f"{self.make_datetime_text()}")
             preview_list.append(stat_text)
 
         return '\n\n'.join(preview_list)
 
     def confirm(self) -> str:
-        if self.state_class in ("Sell", "EditSell"):
+        if self.state_class in ("sell", "rent"):
             negotiable: str = '(торг уместен)' if self.negotiable else '(цена окончательна)'
         else:
             negotiable: None = None
 
         confirm_list: list[str] = [
-            "Вы уверены что хотите опубликовать пост об объявлении"
+            "Вы уверены что хотите опубликовать объявление"
             " со следующими данными?",
-            f"Теги: {self.make_tags(self.state_class)}",
             f"Описание: {hitalic(self.description)}"
         ]
-        if self.price and self.state_class not in ("Sell", "EditSell"):
+        if self.price and self.state_class not in ("sell", "rent"):
             confirm_list.append(f"Желаемая цена: {hcode(str(self.price) + ' ' + self.currency)}")
-        else:
+        elif self.price:
             confirm_list.append(f"Цена: {hcode(str(self.price) + ' ' + (self.price and self.currency or ''))} "
                                 f"{self.price and negotiable or ''}",)
         confirm_list.append(f"Контактные данные: {self.humanize_phone_numbers()}")
-        if self.title:
-            confirm_list.insert(2, f"Заголовок: {hbold(self.title)}")
-        if self.photos_ids:
-            confirm_list.append(f"Картинки: {len(self.photos_ids)} шт")
+        if self.photos:
+            confirm_list.append(f"Картинки: {len(self.photos)} шт")
 
         return '\n\n'.join(confirm_list)
 
     def post(self) -> str:
-        if self.state_class in ("Sell", "EditSell"):
+        if self.state_class in ("sell", "rent"):
             negotiable: str = '(торг уместен)' if self.negotiable else '(цена окончательна)'
         else:
             negotiable: None = None
 
         post_list: list[str] = [
-            self.make_tags(self.state_class),
-            f"{hitalic(self.description)}",
+            self.make_tags(),
+            f"{self.description}",
 
             f"Контактные данные: {self.humanize_phone_numbers()}",
             f"Телеграм: {self.mention}"
         ]
 
-        if self.title:
-            post_list.insert(1, f"{hbold(self.title)}")
-        if self.price:
-            post_list.insert(-2, f"{hcode(str(self.price) + ' ' + self.currency) + ' ' + negotiable or ''}")
+        if self.price and self.state_class in ("sell", "rent"):
+            post_list.insert(2, f"Цена: {str(self.price) + ' ' + self.currency + ' ' + negotiable or ''}")
+        elif self.price:
+            post_list.insert(2, f"Цена: {str(self.price) + ' ' + self.currency}")
 
         return '\n\n'.join(post_list)
 
@@ -245,24 +188,22 @@ class Ad:
 
         return ", ".join(list_of_numbers)
 
-    def make_tags(self, state_class: str = None) -> str:
-        print(state_class)
-        tags = self.tags
-        if state_class:
-            tags.insert(0, "продам" if state_class == "Sell" else "куплю")
-        return ", ".join(["#" + tag for tag in tags])
+    def make_tags(self) -> str:
+        headings: dict = {
+            "buy": "Куплю",
+            "sell": "Продам",
+            "occupy": "Сниму",
+            "rent": "Сдам",
+            "exchange": "Обменяю"
+        }
+        heading = "#" + headings.get(self.state_class)
+        category = "#" + headings.get(self.state_class) + self.tag_category
+        tag = "#" + headings.get(self.state_class) + self.tag_category + self.tag_name
+        return " ".join([heading, category, tag])
 
     def make_datetime_text(self) -> str:
         return f"Дата создания объявления: <code>{self.created_at.strftime('%d.%m.%Y %H:%M:%S')}</code>\n" \
                f"Последнее обновление: <code>{self.updated_at.strftime('%d.%m.%Y %H:%M:%S')}</code>"
-
-    def get_status(self) -> str:
-        status: dict = {
-            ACTIVE: "Активное ✅",
-            INACTIVE: "Неактивное ❌",
-            REJECTED: "Отклонено ⚠️"
-        }
-        return status.get(self.status, "Не определено")
 
     @property
     def currency(self):

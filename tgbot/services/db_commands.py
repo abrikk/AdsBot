@@ -2,7 +2,8 @@ from sqlalchemy import select, or_, update, and_
 
 from tgbot.models.post_ad import PostAd
 from tgbot.models.restriction import Restriction
-from tgbot.models.tag_types import Tag
+from tgbot.models.tag_category import TagCategory
+from tgbot.models.tags_name import TagName
 from tgbot.models.user import User
 
 
@@ -78,13 +79,6 @@ class DBCommands:
         request = await self.session.execute(sql)
         return request.scalars().all()
 
-    async def get_tags(self):
-        sql = select(Tag.tag_name).where(
-            Tag.tag_name.not_in(("продам", "куплю"))
-        ).order_by(Tag.created_at)
-        request = await self.session.execute(sql)
-        return request.scalars().all()
-
     async def get_restriction(self, uid: str):
         sql = select(Restriction).where(Restriction.uid == uid)
         request = await self.session.execute(sql)
@@ -95,21 +89,12 @@ class DBCommands:
         request = await self.session.execute(sql)
         return request.scalars().first()
 
-    async def get_tags_by_name(self, tag_list: list[str]):
-        sql = select(Tag).where(
-            Tag.tag_name.in_(tag_list)
-        ).order_by(Tag.created_at)
-        request = await self.session.execute(sql)
-        return request.scalars().all()
-
-    async def get_my_ads(self, user_id: int):
-        sql = select(
-            PostAd.title,
-            PostAd.description,
-            PostAd.post_id
-        ).where(PostAd.user_id == user_id)
-        request = await self.session.execute(sql)
-        return request.all()
+    # async def get_tags_by_name(self, tag_list: list[str]):
+    #     sql = select(Tag).where(
+    #         Tag.tag_name.in_(tag_list)
+    #     ).order_by(Tag.created_at)
+    #     request = await self.session.execute(sql)
+    #     return request.scalars().all()
 
     async def get_posted_ad(self, post_id: int):
         sql = select(PostAd).where(PostAd.post_id == post_id)
@@ -118,5 +103,55 @@ class DBCommands:
 
     async def get_post_type(self, post_id: int):
         sql = select(PostAd.post_type).where(PostAd.post_id == post_id)
+        request = await self.session.execute(sql)
+        return request.scalars().first()
+
+    # _--------------------------------------------------_
+
+    async def get_tag_categories(self) -> list[TagCategory]:
+        sql = select(TagCategory)
+        request = await self.session.execute(sql)
+        return request.scalars().all()
+
+    async def get_tag_category(self, id: int | str):
+        sql = select(TagCategory.category).where(TagCategory.id == int(id))
+        request = await self.session.execute(sql)
+        return request.scalars().first()
+
+    async def get_tag_names(self, category: str) -> list[TagName]:
+        sql = select(TagName).where(TagName.category == category)
+        request = await self.session.execute(sql)
+        return request.scalars().all()
+
+    async def get_my_ads(self, user_id: int):
+        sql = select(
+            PostAd.description,
+            PostAd.post_id
+        ).where(PostAd.user_id == user_id).order_by(PostAd.created_at)
+        request = await self.session.execute(sql)
+        return request.all()
+
+    async def get_tags(self):
+        sql = select(TagName.category, TagName.name)
+        request = await self.session.execute(sql)
+        return request.all()
+
+    async def get_tags_of_category(self, category: str):
+        sql = select(TagName.id, TagName.name).where(TagName.category == category)
+        request = await self.session.execute(sql)
+        return request.all()
+
+    async def get_categories(self):
+        sql = select(TagCategory.id, TagCategory.category)
+        request = await self.session.execute(sql)
+        return request.all()
+
+    async def get_tags_by_category_and_name(self, category: str, name: str):
+        sql = select(TagName.id).where(
+            and_(
+                TagName.category == category,
+                TagName.name == name
+            )
+        )
         request = await self.session.execute(sql)
         return request.scalars().first()

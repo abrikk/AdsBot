@@ -9,7 +9,8 @@ from tgbot.config import Config, load_config
 from tgbot.models.post_ad import PostAd
 from tgbot.models.related_messages import RelatedMessage
 from tgbot.models.restriction import Restriction
-from tgbot.models.tag_types import Tag
+from tgbot.models.tag_category import TagCategory
+from tgbot.models.tags_name import TagName
 from tgbot.models.user import User
 from tgbot.services.db_base import Base
 

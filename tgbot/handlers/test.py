@@ -47,58 +47,24 @@ async def test_1(message: types.Message):
     await message.bot.delete_message(message.chat.id, message.message_id)
 
 
+# 8910
 # AgACAgIAAxkBAAIXJ2LSgO_PFQXv3h0fqrXMQWavWqfTAALLvDEbjj2ZStu7MGbidBzDAQADAgADeQADKQQ
 async def test_2(message: types.Message, config: Config):
-    await message.answer(message.content_type)
-    await message.answer(message.photo[-1].file_id)
-    await message.answer(message.photo[-1].file_unique_id)
-    # print(message.photo)
-    # await message.answer(str(message.photo[-1]))
-    # await message.answer(message.url)
-    # print(message)
-    # await message.answer(message.message_id)
-    # await message.answer(message.photo[-1].file_id)
-    # await message.answer(message.photo[-1].file_unique_id)
-    # await message.answer("_____")
-    #
-    # mes = await message.bot.send_photo(
-    #     chat_id=config.tg_bot.channel_id,
-    #     photo=message.photo[-1].file_id,
-    #     caption="Какой-то текст"
+    await message.bot.edit_message_media(
+        media=InputMedia(media="AgACAgIAAx0EYgSI8gACASxi2ShUTmA5fM9ZYdztVNXJxwRerwACy7wxG449mUrbuzBm4nQcwwEAAwIAA3kAAykE"),
+        chat_id=message.from_user.id,
+        message_id=8910
+    )
+    x = await message.bot.edit_message_caption(
+        caption="HOHOHOHHO",
+        chat_id=message.from_user.id,
+        message_id=8910
+    )
+    # x = await message.answer_photo(
+    #     photo="AgACAgIAAxkBAAIXJ2LSgO_PFQXv3h0fqrXMQWavWqfTAALLvDEbjj2ZStu7MGbidBzDAQADAgADeQADKQQ",
+    #     caption="This is a photo"
     # )
-    # print(mes.url)
-    # await message.bot.send_photo(
-    #     chat_id=message.from_user.id,
-    #     photo=mes.photo[-1].file_id
-    # )
-    # await message.answer(mes.photo[-1].file_id)
-    # await message.answer(mes.photo[-1].file_unique_id)
-    # await message.bot.delete_message(message.chat.id, message.message_id)
-
-    # m = await message.bot.send_message(chat_id=config.tg_bot.channel_id,
-    #                                    text="Какой-то текст")
-    # print(m.message_id)
-
-    # album = MediaGroup()
-    # album.attach_photo(photo="AgACAgIAAxkBAAIVBmLRUwHKZekXiyGyGM4YRTyVxqRFAAJXvzEbF0aISkcWyJnF_7kmAQADAgADeAADKQQ")
-    # album.attach_photo(photo="AgACAgIAAxkBAAIVCGLRUwZC35cG8T4Y-u1po9sSzFLRAAJYvzEbF0aISr2wEHmArZHWAQADAgADbQADKQQ")
-    # album.attach_photo(
-    #     photo="AgACAgIAAxkBAAIVCmLRUwvCPSr3s2j-UFyICS0-X-EgAAJZvzEbF0aISngOcG2LDTaVAQADAgADbQADKQQ",
-    #     caption="Какое то описание"
-    # )
-    # x = "AgACAgIAAxkBAAIXJ2LSgO_PFQXv3h0fqrXMQWavWqfTAALLvDEbjj2ZStu7MGbidBzDAQADAgADeQADKQQ"
-    # await message.bot.edit_message_media(chat_id=config.tg_bot.channel_id,
-    #                                      message_id=153,
-    #                                      media=InputMedia(
-    #                                          media=x))
-    # await message.bot.edit_message_caption(chat_id=config.tg_bot.channel_id,
-    #                                        message_id=154,
-    #                                        caption=None)
-
-    # post = await message.bot.send_media_group(chat_id=config.tg_bot.channel_id,
-    #                                           media=album)
-    # for p in post:
-    #     print(p.message_id)
+    print(x.message_id)
 
 
 async def delete_all_jobs(message: types.Message):
@@ -110,7 +76,7 @@ async def delete_all_jobs(message: types.Message):
 
 def register_test(dp: Dispatcher):
     dp.register_message_handler(test_1, Command("delete_me"))
-    # dp.register_message_handler(test_2, Command("sent_m"))
+    dp.register_message_handler(test_2, Command("sent_m"))
     dp.register_message_handler(test, Command("test"))
     dp.register_message_handler(show_jobs, Command("show_jobs"))
     dp.register_message_handler(delete_all_jobs, Command("delete_all_jobs"))

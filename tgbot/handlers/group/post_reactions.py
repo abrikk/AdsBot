@@ -4,7 +4,7 @@ from aiogram.utils.markdown import hlink
 from tgbot.config import Config
 from tgbot.filters.is_group import IsGroup
 from tgbot.filters.is_reacted_to_post import IsReactedToPost
-from tgbot.handlers.buy_and_sell.form import make_link_to_post
+# from tgbot.handlers.create_ad.form_2 import make_link_to_post
 from tgbot.models.post_ad import PostAd
 
 

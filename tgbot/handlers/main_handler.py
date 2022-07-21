@@ -1,11 +1,11 @@
 from typing import Dict
 
 from aiogram_dialog import Dialog, Window, DialogManager
-from aiogram_dialog.widgets.kbd import Row, Start, SwitchTo, Group, Back
+from aiogram_dialog.widgets.kbd import Start, SwitchTo, Group, Back
 from aiogram_dialog.widgets.text import Format, Const
 from aiogram_dialog.widgets.when import Whenable
 
-from tgbot.misc.states import Main, Buy, Sell, AdminPanel, MyAds, Form
+from tgbot.misc.states import Main, AdminPanel, MyAds, Form
 from tgbot.misc.switch_inline_query_current_chat import SwitchInlineQueryCurrentChat
 
 
@@ -80,31 +80,31 @@ main_dialog = Dialog(
             Start(
                 text=Const("🟠 Куплю"),
                 id="buy",
-                state=Form.type,
+                state=Form.category,
                 data={"heading": "buy"}
             ),
             Start(
                 text=Const("🔴 Продам"),
                 id="sell",
-                state=Form.type,
+                state=Form.category,
                 data={"heading": "sell"}
             ),
             Start(
                 text=Const("🟡 Сниму"),
-                id="buy",
-                state=Form.type,
+                id="occupy",
+                state=Form.category,
                 data={"heading": "occupy"}
             ),
             Start(
                 text=Const("🟢 Сдам"),
-                id="buy",
-                state=Form.type,
+                id="rent",
+                state=Form.category,
                 data={"heading": "rent"}
             ),
             Start(
                 text=Const("🔃 Обменяю"),
-                id="buy",
-                state=Form.type,
+                id="exchange",
+                state=Form.category,
                 data={"heading": "exchange"}
             ),
             width=2

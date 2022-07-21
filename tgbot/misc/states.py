@@ -8,33 +8,24 @@ class Main(StatesGroup):
 
 class AdminPanel(StatesGroup):
     admin = State()
-    restriction = State()
-    tag = State()
-    add_tag = State()
-    del_tag = State()
+
+
+class ManageRestrictions(StatesGroup):
+    main = State()
+
+
+class ManageTags(StatesGroup):
+    main = State()
+    add_category = State()
+    delete_categories = State()
+    tags = State()
+    add_del_tags = State()
+    confirm_tags = State()
 
 
 class Form(StatesGroup):
-    type = State()
+    category = State()
     tag = State()
-    description = State()
-    photo = State()
-    price = State()
-    contact = State()
-
-
-class Buy(StatesGroup):
-    tags = State()
-    title = State()
-    description = State()
-    photo = State()
-    price = State()
-    contact = State()
-
-
-class Sell(StatesGroup):
-    tags = State()
-    title = State()
     description = State()
     photo = State()
     price = State()
@@ -59,22 +50,6 @@ class MyAds(StatesGroup):
 
 class ShowMyAd(StatesGroup):
     true = State()
+    show_edit = State()
+    edit = State()
     confirm_delete = State()
-
-
-class EditSell(StatesGroup):
-    tags = State()
-    title = State()
-    description = State()
-    photo = State()
-    price = State()
-    contact = State()
-
-
-class EditBuy(StatesGroup):
-    tags = State()
-    title = State()
-    description = State()
-    photo = State()
-    price = State()
-    contact = State()
