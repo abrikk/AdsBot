@@ -28,6 +28,7 @@ from tgbot.services.db_commands import DBCommands
 
 async def start_show_user_dialog(message: types.Message, dialog_manager: DialogManager):
     user_id = message.text.split(":")[-1].strip()
+    print(user_id)
     await dialog_manager.start(
         state=ShowUser.true,
         data={"user_id": int(user_id)},
@@ -251,13 +252,15 @@ async def change_post_limit_value(_call: types.CallbackQuery, widget: ManagedCou
 
 
 async def set_default_post_limit(_call: types.CallbackQuery, _widget: ManagedCheckboxAdapter, manager: DialogManager):
+    print("1")
     user_id: int = manager.current_context().start_data.get("user_id")
     session = manager.data.get("session")
     db: DBCommands = manager.data.get("db_commands")
     user: User = await session.get(User, user_id)
-    post_limit: int = await db.get_value_of_restriction("post")
+    global_post_limit: int = await db.get_value_of_restriction(uid="post")
+    print(global_post_limit)
     user.post_limit = None
-    await manager.dialog().find('post_limit_counter').set_value(value=post_limit)
+    await manager.dialog().find('post_limit_counter').set_value(value=global_post_limit)
     await session.commit()
     manager.current_context().widget_data["post_limit"] = False
 

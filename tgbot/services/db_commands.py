@@ -89,13 +89,6 @@ class DBCommands:
         request = await self.session.execute(sql)
         return request.scalars().first()
 
-    # async def get_tags_by_name(self, tag_list: list[str]):
-    #     sql = select(Tag).where(
-    #         Tag.tag_name.in_(tag_list)
-    #     ).order_by(Tag.created_at)
-    #     request = await self.session.execute(sql)
-    #     return request.scalars().all()
-
     async def get_posted_ad(self, post_id: int):
         sql = select(PostAd).where(PostAd.post_id == post_id)
         request = await self.session.execute(sql)

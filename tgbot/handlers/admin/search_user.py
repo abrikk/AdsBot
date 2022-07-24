@@ -48,13 +48,13 @@ from tgbot.models.user import User
 
 
 async def search_user(query: types.InlineQuery, db_commands):
-    print("really?")
     query_offset = int(query.offset) if query.offset else 0
     users: list[User] = (await db_commands.get_users(
         user_id=query.from_user.id,
         like=query.query.partition(" ")[-1],
         offset=query_offset)
     )
+
     if users:
         results = [
             types.InlineQueryResultArticle(

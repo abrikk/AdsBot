@@ -1,4 +1,4 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
 
 conf_cb = CallbackData("approve", "post_id", "action")
@@ -41,6 +41,25 @@ def join_link(bot_link: str, channel_link: str):
         InlineKeyboardButton(
             text="Перейти в канал 📢",
             url=channel_link
+        )
+    )
+    return markup
+
+
+manage_cb = CallbackData("manage", "post_id", "action")
+
+
+def manage_post(post_id: int):
+    markup = InlineKeyboardMarkup(row_width=1)
+
+    markup.add(
+        InlineKeyboardButton(
+            text="Удалить объявление ❌",
+            callback_data=manage_cb.new(post_id=str(post_id), action="bot")
+        ),
+        InlineKeyboardButton(
+            text="Управление пользователем ⚙️️",
+            url=manage_cb.new(post_id=str(post_id), action="channel")
         )
     )
     return markup
