@@ -1,4 +1,6 @@
+import copy
 import logging
+from itertools import zip_longest
 
 from aiogram import types
 from aiogram.types import InputMedia
@@ -57,9 +59,9 @@ async def edit_input(message: types.Message, _dialog: ManagedDialogAdapterProto,
                 if len(photos) < pic_limit:
                     photos[photo.file_unique_id] = photo.file_id
 
-                    photos_to_delete: int = widget_data.get("photos_to_delete", 0)
-                    photos_to_delete -= 1
-                    widget_data["photos_to_delete"] = photos_to_delete
+                    # photos_to_delete: int = widget_data.get("photos_to_delete", 0)
+                    # photos_to_delete -= 1
+                    # widget_data["photos_to_delete"] = photos_to_delete
                 else:
                     photos.pop(list(photos.keys())[-1], None)
                     photos[photo.file_unique_id] = photo.file_id
@@ -113,9 +115,9 @@ async def delete_item(_call: types.CallbackQuery, button: Button, manager: Dialo
         photos: dict = widget_data.get("photos")
         photos.pop(list(photos.keys())[0], None)
 
-        photos_to_delete: int = widget_data.setdefault("photos_to_delete", 0)
-        photos_to_delete += 1
-        widget_data["photos_to_delete"] = photos_to_delete
+        # photos_to_delete: int = widget_data.setdefault("photos_to_delete", 0)
+        # photos_to_delete += 1
+        # widget_data["photos_to_delete"] = photos_to_delete
 
 
 async def delete_post_ad(call: types.CallbackQuery, _button: Button, manager: DialogManager):
@@ -178,32 +180,34 @@ async def save_edit(call: types.CallbackQuery, _button: Button, manager: DialogM
     config: Config = manager.data.get("config")
     channel = await obj.bot.get_chat(config.tg_bot.channel_id)
     post_id = manager.current_context().start_data.get("post_id")
-    print(post_id)
+
     post_ad: PostAd = await session.get(PostAd, post_id)
-    current_photos = post_ad.related_messages
+    current_photos_unique_ids = [photo.photo_file_unique_id for photo in post_ad.related_messages]
 
     updated_field = widget_data.get(edit)
-    print(updated_field, "xOxOxX")
-    photos_to_delete: int = widget_data.get("photos_to_delete", 0)
 
     if edit == "description":
         post_ad.description = updated_field
 
     elif edit == "photos":
-        photos_post_id: list = widget_data.get("photos_post_id")
-        message_ids: list = list()
-        for photo, photo_id in zip(updated_field.items(), photos_post_id[photos_to_delete:]):
-            message_ids.append(
-                RelatedMessage(
-                    post_id=post_id,
-                    message_id=photo_id,
-                    photo_file_id=photo[-1],
-                    photo_file_unique_id=photo[0]
+        message_ids_to_delete = []
+
+        for related_photo, new_photo in zip_longest(reversed(post_ad.related_messages), reversed(updated_field.items())):
+            if new_photo is None:
+                message_ids_to_delete.append(related_photo.message_id)
+                post_ad.related_messages.remove(related_photo)
+                continue
+
+            if related_photo.photo_file_unique_id != new_photo[0]:
+                related_photo.photo_file_unique_id = new_photo[0]
+                related_photo.photo_file_id = new_photo[1]
+
+        if message_ids_to_delete:
+            for id in message_ids_to_delete:
+                await call.bot.delete_message(
+                    chat_id=config.tg_bot.channel_id,
+                    message_id=id
                 )
-            )
-        print(message_ids)
-        post_ad.related_messages = message_ids
-        print(post_ad.related_messages, "post_ad.related_messages")
 
     elif edit == "price":
         if widget_data.get("negotiable") != post_ad.negotiable:
@@ -214,15 +218,6 @@ async def save_edit(call: types.CallbackQuery, _button: Button, manager: DialogM
 
     elif edit == "contacts":
         post_ad.contacts = ",".join(updated_field)
-
-    if len(current_photos) != len(post_ad.related_messages):
-        print("Photos amount changed less")
-        start_from = len(current_photos) - len(post_ad.related_messages)
-        for m in current_photos[:start_from]:
-            await call.bot.delete_message(
-                chat_id=config.tg_bot.channel_id,
-                message_id=m.message_id
-            )
 
     data: dict = {
         "tag_category": post_ad.tag_category,
@@ -244,25 +239,33 @@ async def save_edit(call: types.CallbackQuery, _button: Button, manager: DialogM
         **data
     )
 
-    if edit == "photos" and post_ad.related_messages:
-        print(list(zip(post_ad.related_messages, current_photos)))
-        for new, old in zip(post_ad.related_messages, current_photos[photos_to_delete:]):
-            print(new, old)
-            print(new.photo_file_unique_id, old.photo_file_unique_id, new.photo_file_unique_id != old.photo_file_unique_id)
-            if new.photo_file_unique_id != old.photo_file_unique_id:
-                await call.bot.edit_message_media(
-                    media=InputMedia(media=new.photo_file_id),
-                    chat_id=config.tg_bot.channel_id,
-                    message_id=new.message_id
-                )
+    if edit == "photos" and len(post_ad.related_messages) > 1:
 
-                if new.message_id == post_id:
+        for new_message in post_ad.related_messages:
+            if new_message.photo_file_unique_id not in current_photos_unique_ids:
+                await call.bot.edit_message_media(
+                    media=InputMedia(media=new_message.photo_file_id),
+                    chat_id=config.tg_bot.channel_id,
+                    message_id=new_message.message_id
+                )
+                if new_message.message_id == post_id:
                     await call.bot.edit_message_caption(
                         chat_id=config.tg_bot.channel_id,
-                        message_id=new.message_id,
+                        message_id=new_message.message_id,
                         caption=ad.post()
                     )
 
+    elif edit == "photos" and post_ad.related_messages:
+        await call.bot.edit_message_media(
+            media=InputMedia(media=post_ad.related_messages[0].photo_file_id),
+            chat_id=config.tg_bot.channel_id,
+            message_id=post_ad.post_id
+        )
+        await call.bot.edit_message_caption(
+            chat_id=config.tg_bot.channel_id,
+            message_id=post_ad.post_id,
+            caption=ad.post()
+        )
     elif post_ad.related_messages:
         await call.bot.edit_message_caption(
             chat_id=config.tg_bot.channel_id,
