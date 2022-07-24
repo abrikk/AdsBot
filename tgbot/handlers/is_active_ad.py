@@ -12,15 +12,10 @@ from tgbot.keyboards.inline import conf_cb, show_posted_ad
 
 from tgbot.misc.ad import Ad
 from tgbot.models.post_ad import PostAd
-from tgbot.models.related_messages import RelatedMessage
 
 
 async def update_ad(call: types.CallbackQuery, callback_data: dict,
                           config: Config, session):
-    print("____________________________________")
-    print(call.id)
-    print(call.message.text)
-    print()
     bot = call.bot
     scheduler: AsyncIOScheduler = call.bot.get('scheduler')
     post_id = int(callback_data.get('post_id'))
@@ -32,14 +27,12 @@ async def update_ad(call: types.CallbackQuery, callback_data: dict,
 
     try:
         if post_ad.related_messages:
-            print("Related messages found")
             for message in post_ad.related_messages:
                 await bot.delete_message(
                     chat_id=config.tg_bot.channel_id,
                     message_id=message.message_id
                 )
         else:
-            print("Related messages not found")
             await bot.delete_message(
                 chat_id=config.tg_bot.channel_id,
                 message_id=post_ad.post_id
@@ -71,7 +64,6 @@ async def update_ad(call: types.CallbackQuery, callback_data: dict,
             "currency_code": post_ad.currency_code,
             "negotiable": post_ad.negotiable,
             "photos": {m.photo_file_unique_id: m.photo_file_id for m in post_ad.related_messages} if post_ad.related_messages else {},
-            # "post_link": make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id),
             "mention": call.from_user.get_mention(),
             "updated_at": post_ad.updated_at,
             "created_at": post_ad.created_at
@@ -113,30 +105,24 @@ async def update_ad(call: types.CallbackQuery, callback_data: dict,
 
         if isinstance(sent_post, list):
             post_id = sent_post[-1].message_id
-            message_ids = [
-                RelatedMessage(
-                    post_id=post_id,
-                    message_id=message.message_id,
-                    photo_file_id=message.photo[-1].file_id,
-                    photo_file_unique_id=message.photo[-1].file_unique_id
-                ) for message in sent_post
-            ]
+            for message, related_message in zip(sent_post, post_ad.related_messages):
+                related_message.post_id = post_id
+                related_message.message_id = message.message_id
+                related_message.photo_file_id = message.photo[-1].file_id
+                related_message.photo_file_unique_id = message.photo[-1].file_unique_id
 
         elif sent_post.photo:
             post_id = sent_post.message_id
-            message_ids = [RelatedMessage(
-                post_id=post_id,
-                message_id=sent_post.message_id,
-                photo_file_id=sent_post.photo[-1].file_id,
-                photo_file_unique_id=sent_post.photo[-1].file_unique_id
-            )]
+            related_message = post_ad.related_messages[0]
+            related_message.post_id = post_id
+            related_message.message_id = sent_post.message_id
+            related_message.photo_file_id = sent_post.photo[-1].file_id
+            related_message.photo_file_unique_id = sent_post.photo[-1].file_unique_id
 
         else:
             post_id = sent_post.message_id
-            message_ids = []
 
         post_ad.post_id = post_id
-        post_ad.related_messages = message_ids
         await call.answer(text="Объявление было успешно обновлено в канале!")
 
         await bot.edit_message_reply_markup(

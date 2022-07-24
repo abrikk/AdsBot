@@ -1,8 +1,8 @@
 """initial
 
-Revision ID: 2d6748de6094
+Revision ID: f7a5f8ddded0
 Revises: 
-Create Date: 2022-07-24 19:20:37.316570
+Create Date: 2022-07-24 20:15:45.114692
 
 """
 from alembic import op
@@ -15,7 +15,7 @@ from tgbot.models.restriction import Restriction
 from tgbot.models.tag_category import TagCategory
 from tgbot.models.tags_name import TagName
 
-revision = '2d6748de6094'
+revision = 'f7a5f8ddded0'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -83,7 +83,7 @@ def upgrade() -> None:
                     sa.Column('message_id', sa.BigInteger(), nullable=False),
                     sa.Column('photo_file_id', sa.String(length=128), nullable=False),
                     sa.Column('photo_file_unique_id', sa.String(length=64), nullable=False),
-                    sa.ForeignKeyConstraint(['post_id'], ['ads.post_id'], ondelete='CASCADE'),
+                    sa.ForeignKeyConstraint(['post_id'], ['ads.post_id'], onupdate='CASCADE', ondelete='CASCADE'),
                     sa.PrimaryKeyConstraint('id'),
                     sa.UniqueConstraint('message_id')
                     )

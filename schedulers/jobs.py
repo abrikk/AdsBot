@@ -10,7 +10,7 @@ from tgbot.models.post_ad import PostAd
 
 
 async def ask_if_active(user_id: int, post_id: int, channel_username: str, bot: Bot):
-    x=await bot.send_message(
+    await bot.send_message(
         user_id,
         f'Ваше объявление {make_link_to_post(channel_username, post_id)} еще актуальное?',
         reply_markup=confirm_post(post_id),
