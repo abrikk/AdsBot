@@ -1,99 +1,22 @@
 import operator
 
 from aiogram import types
-from aiogram_dialog import Dialog, Window, StartMode
+from aiogram_dialog import Dialog, Window, StartMode, DialogManager
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import Start, Button, Row, Back, SwitchTo, Select, Next, Column, Radio, Group
+from aiogram_dialog.widgets.kbd import Start, Button, Row, Back, SwitchTo, Select, Next, Column, Radio, Group, Checkbox
 from aiogram_dialog.widgets.text import Format, Const
 
-# from tgbot.handlers.create_ad.form_2 import make_link_to_post
 from tgbot.handlers.create_ad.form import currency_selected, get_currency_data
 from tgbot.handlers.edit_ad.edit import edit_input, delete_item, delete_post_ad, save_edit_option, clear_data, \
-    save_edit, set_edit_default
+    save_edit
 from tgbot.handlers.edit_ad.getters import get_edit_options, get_edit_text, get_show_my_ad_text, get_post_link, \
     get_can_save_edit
 from tgbot.misc.states import ShowMyAd, MyAds
 
-# async def start_editing_ad(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
-#     start_data = manager.current_context().start_data
-#     post_id = int(start_data.get("post_id"))
-#     db: DBCommands = manager.data.get("db_commands")
-#     post_type: str = await db.get_post_type(post_id)
-#     to_state = EditSell if post_type == "sell" else EditBuy
-#     await manager.start(to_state.tags, data={"post_id": post_id}, mode=StartMode.RESET_STACK)
-#
 
-
-#
-#
-# async def change_post_status(call: types.CallbackQuery, widget: ManagedCheckboxAdapter, manager: DialogManager):
-#     activated: bool = widget.is_checked()
-#     start_data = manager.current_context().start_data
-#     session = manager.data.get("session")
-#     config: Config = manager.data.get("config")
-#     post_id = int(start_data.get("post_id"))
-#     post_ad: PostAd = await session.get(PostAd, post_id)
-#
-#     if not activated:
-#         post_ad.status = INACTIVE
-#         if post_ad.related_messages:
-#             for message in post_ad.related_messages:
-#                 await call.bot.delete_message(
-#                     chat_id=config.tg_bot.channel_id,
-#                     message_id=message.message_id
-#                 )
-#         await call.bot.delete_message(
-#             chat_id=config.tg_bot.channel_id,
-#             message_id=post_ad.post_id
-#         )
-#         await session.commit()
-#     else:
-#         post_ad.status = ACTIVE
-#         data: dict = {
-#             "tags": [tag.tag_name for tag in post_ad.tags],
-#             "description": post_ad.description,
-#             "contacts": post_ad.contacts.split(","),
-#             "price": post_ad.price,
-#             "currency_code": post_ad.currency_code,
-#             "negotiable": post_ad.negotiable,
-#             "title": post_ad.title,
-#             "photos_ids": post_ad.photos_ids.split(",") if post_ad.photos_ids else [],
-#         }
-#
-#         ad: Ad = Ad(
-#             state_class=post_ad.post_type.capitalize(),
-#             **data
-#         )
-#
-#         if ad.photos_ids:
-#             album = MediaGroup()
-#             for file_id in ad.photos_ids[:-1]:
-#                 album.attach_photo(photo=file_id)
-#
-#             album.attach_photo(photo=ad.photos_ids[-1], caption=ad.post())
-#
-#             sent_post = await call.bot.send_media_group(chat_id=config.tg_bot.channel_id,
-#                                                         media=album)
-#         else:
-#             sent_post = await call.bot.send_message(chat_id=config.tg_bot.channel_id,
-#                                                     text=ad.post())
-#
-#         if isinstance(sent_post, list):
-#             post_id = sent_post[-1].message_id
-#             message_ids = [
-#                 RelatedMessage(
-#                     post_id=post_id,
-#                     message_id=p.message_id
-#                 ) for p in sent_post[:-1]
-#             ]
-#         else:
-#             post_id = sent_post.message_id
-#             message_ids = []
-#         post_ad.post_id = post_id
-#         post_ad.related_messages = message_ids
-#         await session.commit()
-#         await call.answer(text="Объявление было успешно активировано!")
-from tgbot.misc.temp_checkbox import Checkbox
+async def get_widget_data(dialog_manager: DialogManager, **_kwargs):
+    print(dialog_manager.current_context().widget_data)
+    return []
 
 show_my_ad_dialog = Dialog(
     Window(
@@ -185,10 +108,14 @@ show_my_ad_dialog = Dialog(
         getter=[get_can_save_edit, get_currency_data, get_edit_text]
     ),
     Window(
-        Format("{post_link}\n"
-               "Вы уверены, что хотите удалить объявление?"),
+        Format("Объвление которое будет удалено: {post_link}\n\n"
+               "Вы уверены, что хотите удалить это объявление безвозвратно?"),
         Row(
-            Back(Const("Нет ❌")),
+            SwitchTo(
+                Const("Нет ❌"),
+                id="delete_post_no",
+                state=ShowMyAd.true
+            ),
             Button(
                 Const("Да ✅"),
                 id="yes_delete",
@@ -198,5 +125,5 @@ show_my_ad_dialog = Dialog(
         state=ShowMyAd.confirm_delete,
         getter=get_post_link
     ),
-    on_start=set_edit_default
+    getter=get_widget_data
 )

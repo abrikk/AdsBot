@@ -2,6 +2,7 @@ import copy
 from typing import Dict, Any
 
 from aiogram import types
+from aiogram.utils.markdown import hlink
 from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.manager.protocols import ManagedDialogAdapterProto
 from aiogram_dialog.widgets.input import TextInput
@@ -10,8 +11,6 @@ from aiogram_dialog.widgets.managed import ManagedWidgetAdapter
 from aiogram_dialog.widgets.when import Whenable
 
 from tgbot.misc.states import Form, ConfirmAd
-from tgbot.models.tag_category import TagCategory
-from tgbot.models.tags_name import TagName
 from tgbot.services.db_commands import DBCommands
 
 create_actions: dict = {
@@ -23,8 +22,8 @@ create_actions: dict = {
 }
 
 
-async def change_stage(_call: types.CallbackQuery, _button: ManagedWidgetAdapter[Select], manager: DialogManager,
-                       stage: str):
+async def change_stage(_call: types.CallbackQuery | types.Message, _button: ManagedWidgetAdapter[Select] | TextInput,
+                       manager: DialogManager, stage: Any | str):
     to_stage: dict = {
         "description": Form.description,
         "photo": Form.photo,
@@ -44,9 +43,8 @@ async def set_default(_, dialog_manager: DialogManager):
     widget_data = dialog_manager.current_context().widget_data
     db: DBCommands = dialog_manager.data.get("db_commands")
 
-    tag, contact, pic, post = await db.get_values_of_restrictions()
+    contact, pic, post = await db.get_values_of_restrictions()
     limits: dict = {
-        "tag_limit": tag,
         "contact_limit": contact,
         "pic_limit": pic,
         "post_limit": post
@@ -150,35 +148,21 @@ async def currency_selected(_call: types.CallbackQuery, _widget: Any, manager: D
     manager.current_context().widget_data['currency'] = currencies[item_id]
 
 
-class RepeatedNumberError(Exception):
-    pass
-
-
 async def contact_validator(message: types.Message, _dialog: ManagedDialogAdapterProto, manager: DialogManager):
     contact_limit: int = manager.current_context().widget_data.get('contact_limit')
-    try:
-        phone_number = message.text.replace(' ', '')
 
-        if phone_number.startswith('+'):
-            phone_number = phone_number.removeprefix('+')
-        if not phone_number.isdigit():
-            raise ValueError
+    phone_number = message.text
+    contact_data = manager.current_context().widget_data.setdefault('contacts', [])
 
-        phone_number = '+' + phone_number
-        contact_data = manager.current_context().widget_data.setdefault('contacts', [])
-
-        if phone_number in contact_data:
-            raise RepeatedNumberError
-        if len(contact_data) < contact_limit:
-            contact_data.append(phone_number)
-        else:
-            contact_data[-1] = phone_number
-    except ValueError:
-        manager.show_mode = ShowMode.EDIT
-        await message.answer("Вы ввели неверный формат номера телефона. Попробуйте еще раз.")
-    except RepeatedNumberError:
+    if phone_number in contact_data:
         manager.show_mode = ShowMode.EDIT
         await message.answer("Вы уже ввели этот номер.")
+        return
+
+    if len(contact_data) < contact_limit:
+        contact_data.append(phone_number)
+    else:
+        contact_data[-1] = phone_number
 
 
 async def delete_contact(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
@@ -187,7 +171,6 @@ async def delete_contact(_call: types.CallbackQuery, _button: Button, manager: D
 
 async def request_confirmation(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
     widget_data: dict = manager.current_context().widget_data
-    print(19191, widget_data)
     data: dict = copy.deepcopy(widget_data)
     data.pop('sg_tag_names', None)
     data.pop('stage', None)
@@ -230,5 +213,20 @@ def get_current_file_id(photos: list[str] = None, page: int | None = None) -> No
         return photos[page - 1]
 
 
-def make_link_to_post(channel_id: int, post_id: int):
-    return f"https://t.me/c/{str(channel_id).removeprefix('-100')}/{post_id}"
+def make_link_to_post(channel_username: str, post_id: int):
+    return f"https://t.me/{channel_username}/{post_id}"
+
+
+def when_not(key: str):
+    def f(data, _whenable, _manager):
+        return not data.get(key)
+
+    return f
+
+
+def get_user_mention(id: int, full_name: str, last_name: str = None, username: str = None) -> str:
+    name = last_name and " ".join([full_name, last_name]) or full_name
+    if username:
+        return hlink(name, f"t.me/{username}")
+    else:
+        return hlink(name, f"tg://user?id={id}")

@@ -2,7 +2,7 @@ import asyncio
 import datetime
 
 from aiogram import Dispatcher, types, Bot
-from aiogram.dispatcher.filters import Command, ChatTypeFilter
+from aiogram.dispatcher.filters import Command, ChatTypeFilter, ContentTypeFilter
 from aiogram.types import ChatMemberUpdated, MediaGroup, InputMedia, InputFile
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -36,7 +36,7 @@ async def show_jobs(message: types.Message, session, config: Config):
     print(scheduler.get_jobs("default"))
     print(str(scheduler.get_jobs("default")))
     print(type(str(scheduler.get_jobs("default"))))
-    await message.answer(str(scheduler.get_jobs("default")))
+    # await message.answer(str(scheduler.get_jobs("default")))
 
 
 # 152 153 154
@@ -50,21 +50,11 @@ async def test_1(message: types.Message):
 # 8910
 # AgACAgIAAxkBAAIXJ2LSgO_PFQXv3h0fqrXMQWavWqfTAALLvDEbjj2ZStu7MGbidBzDAQADAgADeQADKQQ
 async def test_2(message: types.Message, config: Config):
-    await message.bot.edit_message_media(
-        media=InputMedia(media="AgACAgIAAx0EYgSI8gACASxi2ShUTmA5fM9ZYdztVNXJxwRerwACy7wxG449mUrbuzBm4nQcwwEAAwIAA3kAAykE"),
-        chat_id=message.from_user.id,
-        message_id=8910
-    )
-    x = await message.bot.edit_message_caption(
-        caption="HOHOHOHHO",
-        chat_id=message.from_user.id,
-        message_id=8910
-    )
-    # x = await message.answer_photo(
-    #     photo="AgACAgIAAxkBAAIXJ2LSgO_PFQXv3h0fqrXMQWavWqfTAALLvDEbjj2ZStu7MGbidBzDAQADAgADeQADKQQ",
-    #     caption="This is a photo"
-    # )
-    print(x.message_id)
+    # CgACAgIAAxkBAAIoP2LacjY5j_6Kd-ZFVN_CdGqxWUWbAALLGQACFeTZSrIKxiCUKz3FKQQ
+    await message.answer_document("CgACAgIAAxkBAAIoP2LacjY5j_6Kd-ZFVN_CdGqxWUWbAALLGQACFeTZSrIKxiCUKz3FKQQ")
+    # print(message)
+    # print(message.document)
+    # print(message.document.file_id)
 
 
 async def delete_all_jobs(message: types.Message):
@@ -80,5 +70,5 @@ def register_test(dp: Dispatcher):
     dp.register_message_handler(test, Command("test"))
     dp.register_message_handler(show_jobs, Command("show_jobs"))
     dp.register_message_handler(delete_all_jobs, Command("delete_all_jobs"))
-    # dp.register_message_handler(test_2, ChatTypeFilter(types.ChatType.PRIVATE), content_types="photo")
+    # dp.register_message_handler(test_2, content_types="any")
 

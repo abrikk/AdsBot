@@ -1,4 +1,4 @@
-from sqlalchemy import select, or_, update, and_
+from sqlalchemy import select, or_, update, and_, func, Date
 
 from tgbot.models.post_ad import PostAd
 from tgbot.models.restriction import Restriction
@@ -109,9 +109,11 @@ class DBCommands:
     # _--------------------------------------------------_
 
     async def get_tag_categories(self) -> list[TagCategory]:
-        sql = select(TagCategory)
+        sql = select(TagCategory.id, TagCategory.category).where(
+            TagCategory.category.in_(select(TagName.category).distinct())
+        )
         request = await self.session.execute(sql)
-        return request.scalars().all()
+        return request.all()
 
     async def get_tag_category(self, id: int | str):
         sql = select(TagCategory.category).where(TagCategory.id == int(id))
@@ -155,3 +157,32 @@ class DBCommands:
         )
         request = await self.session.execute(sql)
         return request.scalars().first()
+
+    async def get_user_posts_ids(self, user_id: int):
+        sql = select(PostAd.post_id).where(PostAd.user_id == user_id)
+        request = await self.session.execute(sql)
+        return request.scalars().all()
+
+    async def get_support_team(self):
+        sql = select(
+            User.user_id, User.first_name,
+            User.last_name, User.username
+        ).where(User.role.in_(['owner', 'admin']))
+        request = await self.session.execute(sql)
+        return request.all()
+
+    async def get_user_used_limit(self, user_id: int):
+        sql = select(func.count("*")).select_from(PostAd).where(
+            and_(
+                PostAd.user_id == user_id,
+                PostAd.created_at.cast(Date) == func.now().cast(Date)
+            )
+        )
+        request = await self.session.execute(sql)
+        return request.first()
+
+    async def get_post_limit(self):
+        sql = select(Restriction.number).where(Restriction.uid == 'post')
+        request = await self.session.execute(sql)
+        return request.first
+

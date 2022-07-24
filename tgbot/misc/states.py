@@ -20,6 +20,7 @@ class ManageTags(StatesGroup):
     delete_categories = State()
     tags = State()
     add_del_tags = State()
+    confirm_categories = State()
     confirm_tags = State()
 
 
@@ -42,6 +43,8 @@ class ConfirmAd(StatesGroup):
 
 class ShowUser(StatesGroup):
     true = State()
+    confirm = State()
+    reason = State()
 
 
 class MyAds(StatesGroup):

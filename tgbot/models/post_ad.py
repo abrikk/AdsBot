@@ -26,7 +26,8 @@ class PostAd(Base):
 
     related_messages = relationship(
         "RelatedMessage",
-        lazy="joined"
+        lazy="joined",
+        cascade="all, delete, delete-orphan"
     )
 
     __mapper_args__ = {"eager_defaults": True}

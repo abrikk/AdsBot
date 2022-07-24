@@ -1,8 +1,8 @@
 """initial
 
-Revision ID: c758ea2c352d
+Revision ID: 7718d79da469
 Revises: 
-Create Date: 2022-07-21 10:07:21.160539
+Create Date: 2022-07-24 16:50:40.349885
 
 """
 from alembic import op
@@ -15,7 +15,7 @@ from tgbot.models.restriction import Restriction
 from tgbot.models.tag_category import TagCategory
 from tgbot.models.tags_name import TagName
 
-revision = 'c758ea2c352d'
+revision = '7718d79da469'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -79,12 +79,13 @@ def upgrade() -> None:
                     )
     op.create_table('related_message',
                     sa.Column('id', sa.BigInteger(), nullable=False),
-                    sa.Column('post_id', sa.BigInteger(), nullable=True),
+                    sa.Column('post_id', sa.BigInteger(), nullable=False),
                     sa.Column('message_id', sa.BigInteger(), nullable=False),
                     sa.Column('photo_file_id', sa.String(length=128), nullable=False),
                     sa.Column('photo_file_unique_id', sa.String(length=64), nullable=False),
                     sa.ForeignKeyConstraint(['post_id'], ['ads.post_id'], ondelete='CASCADE'),
-                    sa.PrimaryKeyConstraint('id')
+                    sa.PrimaryKeyConstraint('id'),
+                    sa.UniqueConstraint('message_id')
                     )
     op.create_table('tag_name',
                     sa.Column('id', sa.BigInteger(), nullable=False),
@@ -109,10 +110,9 @@ def upgrade() -> None:
                     ("Недвижимость", "Квартира"),
                     ("Недвижимость", "Дача"))
 
-    default_restrictions = ((1, "tag", "Теги", 2),
-                            (2, "contact", "Контакты", 2),
-                            (3, "pic", "Картинки", 5),
-                            (4, "post", "Посты", 3))
+    default_restrictions = ((1, "contact", "Контакты", 2),
+                            (2, "pic", "Картинки", 5),
+                            (3, "post", "Посты", 3))
 
     tag_types = [
         TagCategory(category=category_name) for category_name in default_types

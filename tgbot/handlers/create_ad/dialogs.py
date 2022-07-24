@@ -4,7 +4,7 @@ from aiogram import types
 from aiogram_dialog import Dialog, Window, StartMode
 from aiogram_dialog.widgets.input import TextInput, MessageInput
 from aiogram_dialog.widgets.kbd import Row, Button, \
-    Start, Radio, ScrollingGroup, Group, Back, Next, Column, SwitchTo
+    Start, Radio, ScrollingGroup, Group, Back, Next, Column, SwitchTo, Checkbox
 from aiogram_dialog.widgets.text import Const, Format
 
 from tgbot.handlers.create_ad.form import change_stage, set_default, get_currency_data, contact_exist, \
@@ -14,7 +14,6 @@ from tgbot.handlers.create_ad.getters import get_form_text, get_tag_categories, 
     get_tag_names, get_stages, get_show_next, get_can_post, get_confirm_text, on_confirm
 from tgbot.misc.media_widget import DynamicMediaFileId
 from tgbot.misc.states import Main, ConfirmAd, Form
-from tgbot.misc.temp_checkbox import Checkbox
 
 
 def get_widgets() -> tuple:

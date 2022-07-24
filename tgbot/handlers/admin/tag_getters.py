@@ -1,5 +1,5 @@
 from aiogram import types
-from aiogram.utils.markdown import hcode
+from aiogram.utils.markdown import hcode, hbold
 from aiogram_dialog import DialogManager
 from aiogram_dialog.manager.protocols import ManagedDialogAdapterProto
 from aiogram_dialog.widgets.input import TextInput
@@ -12,7 +12,7 @@ from tgbot.models.tags_name import TagName
 from tgbot.services.db_commands import DBCommands
 
 
-async def get_tag_text(dialog_manager: DialogManager, **_kwargs):
+async def get_main_tags_text(dialog_manager: DialogManager, **_kwargs):
     db: DBCommands = dialog_manager.data.get("db_commands")
     tags: list[tuple[str, str]] = await db.get_tags()
     tag_categories: dict[str, list[str]] = {}
@@ -27,11 +27,15 @@ async def get_tag_text(dialog_manager: DialogManager, **_kwargs):
         [f"<b>{category}</b>: " + ", ".join(map(hcode, tags_list)) for category, tags_list in tag_categories.items()])
     tags_count = sum([len(tags_list) for tags_list in tag_categories.values()])
 
+    inactive_count: int = len(categories) - len(tag_categories)
+
+    emoji: str = (inactive_count > 0) and "⚠" or "✅️"
+
     text = (f"⚙️ Управление тегами:\n\n"
             f"Чтобы добавить или удалить теги в категории, выберите ту категорию в "
             f"которую хотите добавить или удалить тег.\n\n"
             f"✅ Всего активных категорий тегов: <code>{len(tag_categories)}</code>\n"
-            f"⚠️ Всего неактивных категорий тегов: <code>{len(categories) - len(tag_categories)}</code>\n"
+            f"{emoji} Всего неактивных категорий тегов: <code>{inactive_count}</code>\n"
             f"#️⃣ Всего тегов: <code>{tags_count}</code>\n\n"
             f"{tags_text}")
 
@@ -44,11 +48,9 @@ async def get_tag_text(dialog_manager: DialogManager, **_kwargs):
 
 
 async def get_categories_to_delete_text(dialog_manager: DialogManager, **_kwargs):
-    widget_data = dialog_manager.current_context().widget_data
     db: DBCommands = dialog_manager.data.get("db_commands")
     categories: list = await db.get_categories()
 
-    print(widget_data)
     text = "Выберите категории тегов, которые вы хотите удалить:"
     return {
         "del_categories_text": text,
@@ -62,7 +64,7 @@ async def get_tags_text(dialog_manager: DialogManager, **_kwargs):
     widget_data = dialog_manager.current_context().widget_data
     session = dialog_manager.data.get("session")
     db: DBCommands = dialog_manager.data.get("db_commands")
-    category_id: int = int(widget_data.get("category_id"))
+    category_id: int = widget_data.get("category_id")
     category: str = widget_data.get("category")
     if not category:
         category: TagCategory = await session.get(TagCategory, category_id)
@@ -112,6 +114,18 @@ async def get_confirm_tags_text(dialog_manager: DialogManager, **_kwargs):
     return {"confirm_tags_text": text}
 
 
+async def get_confirm_categories_text(dialog_manager: DialogManager, **_kwargs):
+    widget_data = dialog_manager.current_context().widget_data
+    session = dialog_manager.data.get("session")
+    categories_id = map(int, widget_data.get("categories_to_delete"))
+    categories: list[TagCategory] = [await session.get(TagCategory, id) for id in categories_id]
+
+    text = (f"Вы уверены, что хотите удалить следующие категории тегов?"
+            f"Категории которые будут удалены: {', '.join(map(hbold, categories))}")
+
+    return {"confirm_categories_text": text}
+
+
 async def add_category(message: types.Message, _widget: TextInput, manager: DialogManager,
                        category: T):
     session = manager.data.get("session")
@@ -145,14 +159,17 @@ async def confirm_tags(call: types.CallbackQuery, _button: Button, manager: Dial
         )
     else:
         tags_id: list[int] = widget_data.get("tags_id")
-        print(tags_id)
         for tag_id in tags_id:
             tag_obj = await session.get(TagName, tag_id)
             await session.delete(tag_obj)
+        widget_data.pop("tags_id")
     await session.commit()
     success_text = "добавлены" if action == "add" else "удалены"
     await call.answer(f"Теги успешно было {success_text}!")
-    widget_data.clear()
+
+    items_to_pop = ["tags", "target", "action", "category"]
+    for item in items_to_pop:
+        widget_data.pop(item)
     await manager.switch_to(ManageTags.tags)
 
 
@@ -177,14 +194,13 @@ async def validate_tags(message: types.Message, dialog: ManagedDialogAdapterProt
         db: DBCommands = manager.data.get("db_commands")
         for tag in tags:
             tag_id = await db.get_tags_by_category_and_name(category, tag)
-            print(tag_id)
             if not tag_id:
                 tags.remove(tag)
             tags_id = widget_data.setdefault("tags_id", [])
             tags_id.append(tag_id)
 
     widget_data["tags"] = tags
-    await dialog.next()
+    await dialog.switch_to(ManageTags.confirm_tags)
 
 
 def validate_category(category: str):

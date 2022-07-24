@@ -8,4 +8,3 @@ class AdminFilter(BoundFilter):
         data = ctx_data.get()
         user = data["user"]
         return user.role in ("admin", "owner")
-

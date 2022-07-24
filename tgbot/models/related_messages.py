@@ -6,8 +6,8 @@ from tgbot.services.db_base import Base
 class RelatedMessage(Base):
     __tablename__ = "related_message"
     id = Column(BigInteger, primary_key=True)
-    post_id = Column(BigInteger, ForeignKey("ads.post_id", ondelete="CASCADE"))
-    message_id = Column(BigInteger, nullable=False)
+    post_id = Column(BigInteger, ForeignKey("ads.post_id", ondelete="CASCADE"), nullable=False)
+    message_id = Column(BigInteger, nullable=False, unique=True)
     photo_file_id = Column(String(length=128), nullable=False)
     photo_file_unique_id = Column(String(length=64), nullable=False)
 

@@ -1,20 +1,8 @@
-from typing import Dict
-
-from aiogram_dialog import Dialog, Window, DialogManager, StartMode
+from aiogram_dialog import Dialog, Window, StartMode
 from aiogram_dialog.widgets.kbd import Column, Start
 from aiogram_dialog.widgets.text import Format, Const
-from aiogram_dialog.widgets.when import Whenable
 
 from tgbot.misc.states import AdminPanel, Main, ManageTags, ManageRestrictions
-
-
-def show_category_buttons(_data: Dict, _widget: Whenable, manager: DialogManager) -> bool:
-    return manager.current_context().widget_data.get("tag_categories") is True
-
-
-def show_tag_buttons(_data: Dict, _widget: Whenable, manager: DialogManager) -> bool:
-    return manager.current_context().widget_data.get("tag_names") is True
-
 
 admin_dialog = Dialog(
     Window(

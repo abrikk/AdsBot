@@ -7,17 +7,16 @@ from tgbot.models.post_ad import PostAd
 
 class IsReactedToPost(BoundFilter):
     async def check(self, message: types.Message) -> bool:
-        print(message.reply_to_message)
-        if not message.reply_to_message:
+        reply = message.reply_to_message
+        if not reply:
             return False
+        if reply.from_user.id == message.from_user.id:
+            return False
+
         data = ctx_data.get()
         session = data.get("session")
-        print(1)
-        post_ad: PostAd = await session.get(PostAd, message.reply_to_message.forward_from_message_id)
-        print(post_ad)
-        print(2)
+        post_ad: PostAd = await session.get(PostAd, reply.forward_from_message_id)
         if not post_ad:
-            print("really???")
             return False
         else:
             return True

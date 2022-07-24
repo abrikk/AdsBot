@@ -8,7 +8,8 @@ from tgbot.services.utils import make_connection_string
 async def create_db_session(config: Config):
     engine = create_async_engine(
         make_connection_string(config),
-        future=True
+        future=True,
+        echo=True
     )
 
     async_session = sessionmaker(

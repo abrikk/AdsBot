@@ -1,9 +1,6 @@
-from typing import Dict
-
 from aiogram.types import MediaGroup
 from aiogram.utils.markdown import hitalic, hcode
 from aiogram_dialog import DialogManager, ShowMode
-from aiogram_dialog.widgets.when import Whenable
 
 from tgbot.config import Config
 from tgbot.handlers.create_ad.form import make_link_to_post
@@ -18,6 +15,7 @@ async def get_show_my_ad_text(dialog_manager: DialogManager, **_kwargs):
     config: Config = dialog_manager.data.get("config")
     post_id = start_data.get("post_id")
     post_ad: PostAd = await session.get(PostAd, post_id)
+    channel = await obj.bot.get_chat(config.tg_bot.channel_id)
 
     data: dict = {
         "tag_category": post_ad.tag_category,
@@ -28,17 +26,10 @@ async def get_show_my_ad_text(dialog_manager: DialogManager, **_kwargs):
         "currency_code": post_ad.currency_code,
         "negotiable": post_ad.negotiable,
         "photos": [m.photo_file_id for m in post_ad.related_messages] if post_ad.related_messages else [],
-        "post_link": make_link_to_post(channel_id=config.tg_bot.channel_id, post_id=post_ad.post_id),
+        "post_link": make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id),
         "updated_at": post_ad.updated_at,
         "created_at": post_ad.created_at
     }
-
-    if post_ad.related_messages:
-        dialog_manager.show_mode = ShowMode.SEND
-        album = MediaGroup()
-        for photo_id in [m.photo_file_id for m in post_ad.related_messages]:
-            album.attach_photo(photo=photo_id)
-        await obj.bot.send_media_group(chat_id=obj.from_user.id, media=album)
 
     ad: Ad = Ad(
         state_class=post_ad.post_type,
@@ -70,7 +61,8 @@ async def get_post_link(dialog_manager: DialogManager, **_kwargs):
     config: Config = dialog_manager.data.get("config")
     start_data = dialog_manager.current_context().start_data
     post_id = int(start_data.get("post_id"))
-    return {"post_link": make_link_to_post(channel_id=config.tg_bot.channel_id, post_id=post_id)}
+    channel = await dialog_manager.event.bot.get_chat(config.tg_bot.channel_id)
+    return {"post_link": make_link_to_post(channel_username=channel.username, post_id=post_id)}
 
 
 async def get_edit_text(dialog_manager: DialogManager, **_kwargs):
@@ -126,7 +118,7 @@ async def get_edit_text(dialog_manager: DialogManager, **_kwargs):
     return {
         "edit_text": text.get(edit) + current_data_text,
         "delete_contact": edit == "contacts" and len(widget_data.get("contacts")) > 0,
-        "delete_photo": edit == "photos" and len(widget_data.get("photos", {})) > 1,
+        "delete_photo": edit == "photos" and bool(widget_data.get("photos", {})),
         "show_currency": edit == "price",
         "show_checkbox": edit == "price" and post_ad.post_type in ("sell", "rent")
     }
@@ -135,7 +127,6 @@ async def get_edit_text(dialog_manager: DialogManager, **_kwargs):
 async def get_can_save_edit(dialog_manager: DialogManager, **_kwargs) -> dict:
 
     widget_data = dialog_manager.current_context().widget_data
-    print(widget_data)
     edit: str = widget_data.get("edit")
     session = dialog_manager.data.get("session")
     post_id = dialog_manager.current_context().start_data.get("post_id")

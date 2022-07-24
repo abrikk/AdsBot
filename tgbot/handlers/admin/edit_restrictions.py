@@ -2,7 +2,7 @@ import operator
 
 from aiogram import types
 from aiogram_dialog import Dialog, Window, DialogManager
-from aiogram_dialog.widgets.kbd import Back, Counter, ListGroup, ManagedCounterAdapter, Start
+from aiogram_dialog.widgets.kbd import Counter, ListGroup, ManagedCounterAdapter, Start
 from aiogram_dialog.widgets.kbd.list_group import SubManager
 from aiogram_dialog.widgets.text import Const, Format
 
@@ -17,10 +17,9 @@ async def get_restriction_text(dialog_manager: DialogManager, **_kwargs):
 
     text = (f"Управление ограничениями (эти ограничения устанавливаются "
             f"для всех пользователей):\n\n"
-            f"Максимальное количество тегов в объявлении: <code>{values[0]}</code>\n"
-            f"Максимальное количество контактов в объявлении: <code>{values[1]}</code>\n"
-            f"Максимальное количество картинок в объявлении: <code>{values[2]}</code>\n"
-            f"Максимальное количество постов в день: <code>{values[3]}</code>\n")
+            f"Максимальное количество контактов в объявлении: <code>{values[0]}</code>\n"
+            f"Максимальное количество картинок в объявлении: <code>{values[1]}</code>\n"
+            f"Максимальное количество постов в день: <code>{values[2]}</code>\n")
 
     return {"restriction_text": text}
 
@@ -47,15 +46,13 @@ async def set_default_restrict_data(_, dialog_manager: DialogManager):
     restrictions: list[Restriction] = await db.get_restrictions()
 
     widget_adtapter = dialog_manager.dialog().find("rest_management")
-    tag_widget = widget_adtapter.find_for_item("c", "tag")
     contact_widget = widget_adtapter.find_for_item("c", "contact")
     pic_widget = widget_adtapter.find_for_item("c", "pic")
     post_widget = widget_adtapter.find_for_item("c", "post")
 
-    await tag_widget.set_value(value=restrictions[0].number)
-    await contact_widget.set_value(value=restrictions[1].number)
-    await pic_widget.set_value(value=restrictions[2].number)
-    await post_widget.set_value(value=restrictions[3].number)
+    await contact_widget.set_value(value=restrictions[0].number)
+    await pic_widget.set_value(value=restrictions[1].number)
+    await post_widget.set_value(value=restrictions[2].number)
 
 
 edit_restrictions_dialog = Dialog(

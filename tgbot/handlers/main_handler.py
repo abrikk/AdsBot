@@ -1,12 +1,16 @@
 from typing import Dict
 
+from aiogram import types
 from aiogram_dialog import Dialog, Window, DialogManager
-from aiogram_dialog.widgets.kbd import Start, SwitchTo, Group, Back
+from aiogram_dialog.widgets.kbd import Start, Group, Back, Button
 from aiogram_dialog.widgets.text import Format, Const
 from aiogram_dialog.widgets.when import Whenable
 
+from tgbot.handlers.make_fucking_ad import make_fucking_ad
 from tgbot.misc.states import Main, AdminPanel, MyAds, Form
 from tgbot.misc.switch_inline_query_current_chat import SwitchInlineQueryCurrentChat
+from tgbot.models.user import User
+from tgbot.services.db_commands import DBCommands
 
 
 async def get_main_text(dialog_manager: DialogManager, **_kwargs):
@@ -18,6 +22,49 @@ async def get_main_text(dialog_manager: DialogManager, **_kwargs):
         return {"main_text": text, "user_role": user_role}
 
     return {"main_text": "Что будем делать?"}
+
+
+async def switch_to_make_ad(call: types.CallbackQuery, _button: Button, manager: DialogManager):
+    session = manager.data.get("session")
+    user: User = await session.get(User, manager.event.from_user.id)
+
+    if restricted_date := user.restricted_till:
+        date_text = "Администраторы бота запретили Вам создавать объявления до {date}, " \
+                    "{time}".format(date=restricted_date.strftime("%d.%m.%Y"),
+                                    time=restricted_date.strftime("%H:%M"))
+        await call.answer(text=date_text, show_alert=True)
+        return
+
+    db: DBCommands = manager.data.get("db_commands")
+    common_post_limit: int = await db.get_post_limit()
+    used_limit: int = await db.get_user_used_limit(user.user_id)
+
+    if user.post_limit and used_limit == user.post_limit or used_limit == common_post_limit:
+        await call.answer(text="Вы исчерпали лимит публикаций объявлений в день. Попробуйте завтра.")
+        return
+
+    await manager.dialog().next()
+
+
+# async def get_share_url(dialog_manager: DialogManager, **_kwargs):
+#     config: Config = dialog_manager.data.get("config")
+#     obj = dialog_manager.event
+#     bot = obj.bot
+#     bot_username = (await bot.me).username
+#     chat_id = config.tg_bot.channel_id
+#     channel = await bot.get_chat(chat_id)
+#     channel_link = f"https://t.me/{channel.username}"
+#     bot_link = f"https://t.me/{bot_username}"
+#
+#     bot_involved_text = f"@{bot_username}" \
+#                         f"🇺🇦 Присоединяйся! Бот для создания объявлений" \
+#                         f" купли-продажи товаров или услуг на канале {hlink(channel.title, channel_link)}."
+#     #
+#     # channel_involved_text = f"🇺🇦 Присоединяйся! {hlink('Канал', channel_link)} с объявлениями о купле/продаже " \
+#     #                         f"товаров или услуг в Мариуполе."
+#
+#     url = f"https://t.me/share/url?start={obj.from_user.id}&text={bot_involved_text}"
+#     return {"url": url}
 
 
 def is_owner(data: Dict, _widget: Whenable, manager: DialogManager):
@@ -37,23 +84,12 @@ def is_admin(data: Dict, _widget: Whenable, manager: DialogManager):
 main_dialog = Dialog(
     Window(
         Format(text="{main_text}", when="main_text"),
-        SwitchTo(
-          text=Const("🪄 Создать объявление"),
-          id="make_ad",
-          state=Main.make_ad
+        Button(
+            text=Const("🪄 Создать объявление"),
+            id="make_ad",
+            on_click=switch_to_make_ad,
+            # state=Main.make_ad
         ),
-        # Row(
-        #     Start(
-        #         text=Const("🟠 Куплю"),
-        #         id="buy",
-        #         state=Buy.tags
-        #     ),
-        #     Start(
-        #         text=Const("🔴 Продам"),
-        #         id="sell",
-        #         state=Sell.tags
-        #     )
-        # ),
         Start(
             text=Const("🌀 Мои объявления"),
             id="my_ads",
@@ -76,6 +112,11 @@ main_dialog = Dialog(
     ),
     Window(
         Const("Выберите рубрику вашего объявления:"),
+        Button(
+          text=Const("default"),
+          id="default",
+          on_click=make_fucking_ad
+        ),
         Group(
             Start(
                 text=Const("🟠 Куплю"),
@@ -110,7 +151,7 @@ main_dialog = Dialog(
             width=2
         ),
         Back(
-          text=Const("🔚 В главное меню")
+            text=Const("🔚 В главное меню")
         ),
         state=Main.make_ad
     )

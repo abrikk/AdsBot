@@ -2,16 +2,16 @@ import operator
 from typing import Dict
 
 from aiogram import types
-from aiogram_dialog import Dialog, Window, DialogManager
+from aiogram_dialog import Dialog, Window, DialogManager, StartMode
 from aiogram_dialog.widgets.input import TextInput, MessageInput
 from aiogram_dialog.widgets.kbd import SwitchTo, Start, Row, Select, Group, ScrollingGroup, Back, Multiselect, Button
 from aiogram_dialog.widgets.managed import ManagedWidgetAdapter
 from aiogram_dialog.widgets.text import Const, Format
 from aiogram_dialog.widgets.when import Whenable
 
-from tgbot.handlers.admin.getters import get_tag_text, validate_category, add_category, \
+from tgbot.handlers.admin.tag_getters import get_main_tags_text, validate_category, add_category, \
     get_categories_to_delete_text, delete_chosen_categories, get_add_del_tags_text, get_tags_text, validate_tags, \
-    confirm_tags, get_confirm_tags_text
+    confirm_tags, get_confirm_tags_text, get_confirm_categories_text
 from tgbot.handlers.edit_ad.edit import clear_data
 from tgbot.misc.states import ManageTags, AdminPanel
 
@@ -31,7 +31,7 @@ async def save_action(_call: types.CallbackQuery, button: Button, manager: Dialo
 
 def chosen_category_to_delete(_data: Dict, _widget: Whenable, manager: DialogManager) -> bool:
     widget_data = manager.current_context().widget_data
-    return widget_data.get("categories_to_delete") is not None
+    return bool(widget_data.get("categories_to_delete"))
 
 
 edit_tags_dialog = Dialog(
@@ -78,10 +78,11 @@ edit_tags_dialog = Dialog(
         Start(
             text=Const("Назад"),
             id="back_to_admin",
-            state=AdminPanel.admin
+            state=AdminPanel.admin,
+            mode=StartMode.RESET_STACK
         ),
         state=ManageTags.main,
-        getter=get_tag_text
+        getter=get_main_tags_text
     ),
 
     Window(
@@ -111,11 +112,14 @@ edit_tags_dialog = Dialog(
             when="show_group"
         ),
         Row(
-            Back(text=Const("Отмена")),
-            Button(
+            Back(
+                text=Const("Отмена"),
+                on_click=clear_data
+            ),
+            SwitchTo(
                 text=Const("Удалить"),
                 id="del_categories",
-                on_click=delete_chosen_categories,
+                state=ManageTags.confirm_categories,
                 when=chosen_category_to_delete
             )
         ),
@@ -134,7 +138,8 @@ edit_tags_dialog = Dialog(
             SwitchTo(
                 text=Const("Отмена"),
                 id="back_to_tags",
-                state=ManageTags.main
+                state=ManageTags.main,
+                on_click=clear_data
             ),
         ),
         TextInput(
@@ -191,6 +196,24 @@ edit_tags_dialog = Dialog(
     ),
 
     Window(
+        Format(text="{confirm_categories_text}", when="confirm_categories_text"),
+        Row(
+            SwitchTo(
+                text=Const("Нет"),
+                id="back_to_main",
+                state=ManageTags.main
+            ),
+            Button(
+                text=Const("Да"),
+                id="confirm_categories",
+                on_click=delete_chosen_categories
+            )
+        ),
+        state=ManageTags.confirm_categories,
+        getter=get_confirm_categories_text
+    ),
+
+    Window(
         Format(text="{confirm_tags_text}", when="confirm_tags_text"),
         Row(
             SwitchTo(
@@ -206,5 +229,5 @@ edit_tags_dialog = Dialog(
         ),
         state=ManageTags.confirm_tags,
         getter=get_confirm_tags_text
-    ),
+    )
 )
