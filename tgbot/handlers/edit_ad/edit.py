@@ -1,10 +1,9 @@
-import copy
 import logging
 from itertools import zip_longest
 
 from aiogram import types
 from aiogram.types import InputMedia
-from aiogram.utils.exceptions import MessageToDeleteNotFound, MessageNotModified
+from aiogram.utils.exceptions import MessageToDeleteNotFound
 from aiogram_dialog import DialogManager, StartMode
 from aiogram_dialog.manager.protocols import ManagedDialogAdapterProto, ShowMode
 from aiogram_dialog.widgets.kbd import Button, Select, Back
@@ -17,7 +16,6 @@ from tgbot.misc.ad import Ad
 from tgbot.misc.states import MyAds, ShowMyAd
 
 from tgbot.models.post_ad import PostAd
-from tgbot.models.related_messages import RelatedMessage
 from tgbot.models.restriction import Restriction
 
 
@@ -58,10 +56,6 @@ async def edit_input(message: types.Message, _dialog: ManagedDialogAdapterProto,
 
                 if len(photos) < pic_limit:
                     photos[photo.file_unique_id] = photo.file_id
-
-                    # photos_to_delete: int = widget_data.get("photos_to_delete", 0)
-                    # photos_to_delete -= 1
-                    # widget_data["photos_to_delete"] = photos_to_delete
                 else:
                     photos.pop(list(photos.keys())[-1], None)
                     photos[photo.file_unique_id] = photo.file_id
@@ -115,10 +109,6 @@ async def delete_item(_call: types.CallbackQuery, button: Button, manager: Dialo
         photos: dict = widget_data.get("photos")
         photos.pop(list(photos.keys())[0], None)
 
-        # photos_to_delete: int = widget_data.setdefault("photos_to_delete", 0)
-        # photos_to_delete += 1
-        # widget_data["photos_to_delete"] = photos_to_delete
-
 
 async def delete_post_ad(call: types.CallbackQuery, _button: Button, manager: DialogManager):
     start_data = manager.current_context().start_data
@@ -127,7 +117,7 @@ async def delete_post_ad(call: types.CallbackQuery, _button: Button, manager: Di
     config: Config = manager.data.get("config")
     post_id = int(start_data.get("post_id"))
     post_ad: PostAd = await session.get(PostAd, post_id)
-    print(post_ad.related_messages)
+
     try:
         if post_ad.related_messages:
             for message in post_ad.related_messages:

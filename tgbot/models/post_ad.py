@@ -1,5 +1,5 @@
 from sqlalchemy import Column, BigInteger, String, TIMESTAMP, func, Integer, \
-    Boolean, ForeignKey, ForeignKeyConstraint
+    Boolean, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 
 from tgbot.services.db_base import Base

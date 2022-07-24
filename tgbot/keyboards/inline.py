@@ -19,6 +19,17 @@ def confirm_post(post_id: int):
     return markup
 
 
+def show_posted_ad(post_link: str):
+    markup = InlineKeyboardMarkup()
+    markup.add(
+        InlineKeyboardButton(
+            text="Посмотреть объявление 📢",
+            url=post_link
+        )
+    )
+    return markup
+
+
 def join_link(bot_link: str, channel_link: str):
     markup = InlineKeyboardMarkup(row_width=1)
 

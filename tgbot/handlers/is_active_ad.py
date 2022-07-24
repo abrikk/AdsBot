@@ -5,9 +5,10 @@ from aiogram.types import MediaGroup
 from aiogram.utils.exceptions import MessageToDeleteNotFound
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
+from schedulers.functions import create_jobs
 from tgbot.config import Config
 from tgbot.handlers.create_ad.form import make_link_to_post
-from tgbot.keyboards.inline import conf_cb
+from tgbot.keyboards.inline import conf_cb, show_posted_ad
 
 from tgbot.misc.ad import Ad
 from tgbot.models.post_ad import PostAd
@@ -16,6 +17,10 @@ from tgbot.models.related_messages import RelatedMessage
 
 async def update_ad(call: types.CallbackQuery, callback_data: dict,
                           config: Config, session):
+    print("____________________________________")
+    print(call.id)
+    print(call.message.text)
+    print()
     bot = call.bot
     scheduler: AsyncIOScheduler = call.bot.get('scheduler')
     post_id = int(callback_data.get('post_id'))
@@ -27,12 +32,14 @@ async def update_ad(call: types.CallbackQuery, callback_data: dict,
 
     try:
         if post_ad.related_messages:
+            print("Related messages found")
             for message in post_ad.related_messages:
                 await bot.delete_message(
                     chat_id=config.tg_bot.channel_id,
                     message_id=message.message_id
                 )
         else:
+            print("Related messages not found")
             await bot.delete_message(
                 chat_id=config.tg_bot.channel_id,
                 message_id=post_ad.post_id
@@ -43,6 +50,16 @@ async def update_ad(call: types.CallbackQuery, callback_data: dict,
     if action == "no":
         await session.delete(post_ad)
         await call.message.answer("Ваше объявление было удалено, поскольку оно больше не актуально.")
+        await bot.edit_message_reply_markup(
+            chat_id=call.from_user.id,
+            message_id=call.message.message_id,
+            reply_markup=None
+        )
+        await bot.edit_message_text(
+            text=call.message.text + "\n\nОбъявление было удалено в канале!⚠️",
+            chat_id=call.from_user.id,
+            message_id=call.message.message_id
+        )
 
     else:
         data: dict = {
@@ -53,8 +70,8 @@ async def update_ad(call: types.CallbackQuery, callback_data: dict,
             "contacts": post_ad.contacts.split(","),
             "currency_code": post_ad.currency_code,
             "negotiable": post_ad.negotiable,
-            "photos": [m.photo_file_id for m in post_ad.related_messages] if post_ad.related_messages else [],
-            "post_link": make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id),
+            "photos": {m.photo_file_unique_id: m.photo_file_id for m in post_ad.related_messages} if post_ad.related_messages else {},
+            # "post_link": make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id),
             "mention": call.from_user.get_mention(),
             "updated_at": post_ad.updated_at,
             "created_at": post_ad.created_at
@@ -122,9 +139,21 @@ async def update_ad(call: types.CallbackQuery, callback_data: dict,
         post_ad.related_messages = message_ids
         await call.answer(text="Объявление было успешно обновлено в канале!")
 
-    await session.commit()
+        await bot.edit_message_reply_markup(
+            chat_id=call.from_user.id,
+            message_id=call.message.message_id,
+            reply_markup=show_posted_ad(make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id))
+        )
+        await bot.edit_message_text(
+            text=call.message.text + "\n\nОбъявление было успешно обновлено в канале!✅",
+            chat_id=call.from_user.id,
+            message_id=call.message.message_id
+        )
 
-    print(scheduler.get_jobs("default"))
+        channel = await call.bot.get_chat(config.tg_bot.channel_id)
+        create_jobs(scheduler, call.from_user.id, post_ad.post_id, channel.id, channel.username)
+
+    await session.commit()
 
 
 def register_ad_status_handler(dp: Dispatcher):
