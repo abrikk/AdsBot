@@ -43,15 +43,12 @@ async def update_ad(call: types.CallbackQuery, callback_data: dict,
     if action == "no":
         await session.delete(post_ad)
         await call.message.answer("Ваше объявление было удалено, поскольку оно больше не актуально.")
-        await bot.edit_message_reply_markup(
-            chat_id=call.from_user.id,
-            message_id=call.message.message_id,
-            reply_markup=None
-        )
+
         await bot.edit_message_text(
             text=call.message.text + "\n\nОбъявление было удалено в канале!⚠️",
             chat_id=call.from_user.id,
-            message_id=call.message.message_id
+            message_id=call.message.message_id,
+            reply_markup=None
         )
 
         await bot.edit_message_text(
@@ -64,24 +61,21 @@ async def update_ad(call: types.CallbackQuery, callback_data: dict,
         )
 
     else:
-        data: dict = {
-            "tag_category": post_ad.tag_category,
-            "tag_name": post_ad.tag_name,
-            "description": post_ad.description,
-            "price": post_ad.price,
-            "contacts": post_ad.contacts.split(","),
-            "currency_code": post_ad.currency_code,
-            "negotiable": post_ad.negotiable,
-            "photos": {m.photo_file_unique_id: m.photo_file_id for m in post_ad.related_messages} if post_ad.related_messages else {},
-            "mention": call.from_user.get_mention(),
-            "post_link": make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id),
-            "updated_at": post_ad.updated_at,
-            "created_at": post_ad.created_at
-        }
 
         ad: Ad = Ad(
             state_class=post_ad.post_type,
-            **data
+            tag_category=post_ad.tag_category,
+            tag_name=post_ad.tag_name,
+            description=post_ad.description,
+            price=post_ad.price,
+            contacts=post_ad.contacts.split(","),
+            currency_code=post_ad.currency_code,
+            negotiable=post_ad.negotiable,
+            photos={m.photo_file_unique_id: m.photo_file_id for m in post_ad.related_messages} if post_ad.related_messages else {},
+            mention=call.from_user.get_mention(),
+            post_link=make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id),
+            updated_at=post_ad.updated_at,
+            created_at=post_ad.created_at
         )
 
         if len(ad.photos) > 1:
@@ -138,29 +132,18 @@ async def update_ad(call: types.CallbackQuery, callback_data: dict,
         await bot.edit_message_text(
             text=call.message.text + "\n\nОбъявление было успешно обновлено в канале!✅",
             chat_id=call.from_user.id,
-            message_id=call.message.message_id
-        )
-        await bot.edit_message_reply_markup(
-            chat_id=call.from_user.id,
             message_id=call.message.message_id,
             reply_markup=show_posted_ad(ad.post_link)
         )
 
         ad.post_link = make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id)
-        if not isinstance(sent_post, list) and sent_post.photo:
-            await bot.edit_message_caption(
-                chat_id=config.tg_bot.private_group_id,
-                message_id=post_ad.admin_group_message_id,
-                caption=ad.post(where="admin_group"),
-                reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id, full_name=call.from_user.full_name)
-            )
-        else:
-            await bot.edit_message_text(
-                chat_id=config.tg_bot.private_group_id,
-                message_id=post_ad.admin_group_message_id,
-                text=ad.post(where="admin_group"),
-                reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id, full_name=call.from_user.full_name)
-            )
+
+        await bot.edit_message_text(
+            chat_id=config.tg_bot.private_group_id,
+            message_id=post_ad.admin_group_message_id,
+            text=ad.post(where="admin_group"),
+            reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id, full_name=call.from_user.full_name)
+        )
 
         channel = await call.bot.get_chat(config.tg_bot.channel_id)
         create_jobs(scheduler, call.from_user.id, post_ad.post_id, channel.id, config.tg_bot.private_group_id,

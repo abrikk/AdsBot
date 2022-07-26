@@ -42,10 +42,7 @@ async def main():
     logger.info("Starting bot")
     config: Config = load_config(".env")
 
-    if config.tg_bot.use_redis:
-        storage = RedisStorage2(host=config.redis_config.host)
-    else:
-        storage = MemoryStorage()
+    storage = RedisStorage2(host=config.redis_config.host)
 
     bot = Bot(token=config.tg_bot.token, parse_mode='HTML')
     dp = Dispatcher(bot, storage=storage)

@@ -22,5 +22,5 @@ class ManageUser(BoundFilter):
             return False
 
         chosen_user: User = await session.get(User, int(chosen_user_id))
-        print(chosen_user is not None)
+
         return chosen_user is not None

@@ -17,23 +17,19 @@ async def get_show_my_ad_text(dialog_manager: DialogManager, **_kwargs):
     post_ad: PostAd = await session.get(PostAd, post_id)
     channel = await obj.bot.get_chat(config.tg_bot.channel_id)
 
-    data: dict = {
-        "tag_category": post_ad.tag_category,
-        "tag_name": post_ad.tag_name,
-        "description": post_ad.description,
-        "contacts": post_ad.contacts.split(","),
-        "price": post_ad.price,
-        "currency_code": post_ad.currency_code,
-        "negotiable": post_ad.negotiable,
-        "photos": [m.photo_file_id for m in post_ad.related_messages] if post_ad.related_messages else [],
-        "post_link": make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id),
-        "updated_at": post_ad.updated_at,
-        "created_at": post_ad.created_at
-    }
-
     ad: Ad = Ad(
         state_class=post_ad.post_type,
-        **data
+        tag_category=post_ad.tag_category,
+        tag_name=post_ad.tag_name,
+        description=post_ad.description,
+        contacts=post_ad.contacts.split(","),
+        price=post_ad.price,
+        currency_code=post_ad.currency_code,
+        negotiable=post_ad.negotiable,
+        photos={m.photo_file_unique_id: m.photo_file_id for m in post_ad.related_messages} if post_ad.related_messages else {},
+        post_link=make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id),
+        updated_at=post_ad.updated_at,
+        created_at=post_ad.created_at
     )
 
     return {"preview_text": ad.preview(where="edit"), "url": ad.post_link}

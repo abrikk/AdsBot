@@ -5,7 +5,6 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.schedulers.base import BaseScheduler
 from apscheduler_di import ContextSchedulerDecorator
 from sqlalchemy.orm import sessionmaker
-from tzlocal import get_localzone
 
 from tgbot.config import load_config, Config
 

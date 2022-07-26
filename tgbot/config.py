@@ -25,7 +25,6 @@ class TgBot:
     admin_ids: list[int]
     channel_id: int
     private_group_id: int
-    use_redis: bool
 
 
 @dataclass
@@ -50,8 +49,7 @@ def load_config(path: str = None):
             token=env.str("BOT_TOKEN"),
             admin_ids=list(map(int, env.list("ADMINS"))),
             channel_id=env.int("CHANNEL_ID"),
-            private_group_id=env.int("PRIVATE_GROUP_ID"),
-            use_redis=env.bool("USE_REDIS"),
+            private_group_id=env.int("PRIVATE_GROUP_ID")
         ),
         db=DbConfig(
             user=env.str('DB_USER'),

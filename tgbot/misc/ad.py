@@ -16,7 +16,7 @@ class Ad:
 
     description: str = ""
     photos: dict | list = field(default_factory=dict)
-    price: float | int = field(default_factory=float)
+    price: int = field(default_factory=int)
     contacts: list[str] = field(default_factory=list)
 
     currency_code: str = ""

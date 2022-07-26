@@ -27,12 +27,11 @@ from tgbot.services.db_commands import DBCommands
 
 
 async def start_show_user_dialog(message: types.Message, dialog_manager: DialogManager):
-    print("start_show_user_dialog")
     if message.is_command() and message.get_args() and message.get_command() == "/start":
         user_id = message.get_args()
     else:
         user_id = message.text.split(":")[-1].strip()
-    print(user_id)
+
     await dialog_manager.start(
         state=ShowUser.true,
         data={"user_id": int(user_id)},
@@ -52,7 +51,7 @@ async def set_default_data(_, dialog_manager: DialogManager):
 
     checked_limit: bool = True if (not user_post_limit) or user_post_limit == global_post_limit else False
     checked_active: bool = True if (not user_max_active) or user_max_active == global_max_active else False
-    print(checked_limit)
+
     limit_value: int = user_post_limit if user_post_limit else global_post_limit
     max_active_value: int = user_max_active if user_max_active else global_max_active
 

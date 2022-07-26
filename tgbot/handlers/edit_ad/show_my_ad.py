@@ -1,7 +1,7 @@
 import operator
 
 from aiogram import types
-from aiogram_dialog import Dialog, Window, StartMode, DialogManager
+from aiogram_dialog import Dialog, Window, StartMode
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Start, Button, Row, Back, SwitchTo, Select, Next, Column, Radio, Group, Checkbox, \
     Url

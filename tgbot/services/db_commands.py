@@ -172,6 +172,13 @@ class DBCommands:
         request = await self.session.execute(sql)
         return request.all()
 
+    async def get_support_team_ids(self):
+        sql = select(
+            User.user_id
+        ).where(User.role.in_(['owner', 'admin']))
+        request = await self.session.execute(sql)
+        return request.scalars().all()
+
     # async def get_user_used_limit(self, user_id: int):
     #     sql = select(func.count("*")).select_from(PostAd).where(
     #         and_(

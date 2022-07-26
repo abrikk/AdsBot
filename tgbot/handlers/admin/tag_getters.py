@@ -10,7 +10,6 @@ from sqlalchemy.exc import IntegrityError
 from tgbot.misc.states import ManageTags
 from tgbot.models.tag_category import TagCategory
 from tgbot.models.tags_name import TagName
-from tgbot.models.user import User
 from tgbot.services.db_commands import DBCommands
 
 
@@ -200,28 +199,26 @@ async def delete_chosen_categories(call: types.CallbackQuery, _button: Button, m
 async def validate_tags(message: types.Message, dialog: ManagedDialogAdapterProto, manager: DialogManager):
     widget_data = manager.current_context().widget_data
     tags: list = list(set(map(lambda t: t.replace(",", "").capitalize(), message.text.split())))
-    print(tags)
+
     action: str = widget_data.get("action")
     if action == "del":
         category: str = widget_data.get("category")
         db: DBCommands = manager.data.get("db_commands")
         for tag in tags:
             tag_id = await db.get_tags_by_category_and_name(category, tag)
-            print("id tag by categoru and  name:", tag_id)
+
             if not tag_id:
-                print("no tag", tags)
                 tags.remove(tag)
                 continue
-            print("what it gives", widget_data.setdefault("tags_id", []))
+
             tags_id: list[int] = widget_data.setdefault("tags_id", [])
             tags_id.append(tag_id)
         if not tags:
             return
-    print("FINALLY", tags)
+
     widget_data["tags"] = tags
     await dialog.switch_to(ManageTags.confirm_tags)
 
 
 def validate_category(category: str):
     return "_".join(category.split()).capitalize()
-    # return category.strip().capitalize()

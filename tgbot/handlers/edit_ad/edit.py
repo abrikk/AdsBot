@@ -68,7 +68,7 @@ async def edit_input(message: types.Message, _dialog: ManagedDialogAdapterProto,
 
     elif edit == "price":
         try:
-            price: float = (float(message.text).is_integer() and int(message.text)) or round(float(message.text), 2)
+            price: int = int(message.text)
 
             if price == post_ad.price:
                 manager.show_mode = ShowMode.EDIT
@@ -174,7 +174,6 @@ async def save_edit_option(_call: types.CallbackQuery, _widget: ManagedWidgetAda
 
 
 async def clear_data(_call: types.CallbackQuery, _button: Button | Back, manager: DialogManager):
-    print(manager.current_context().widget_data)
     manager.current_context().widget_data.clear()
 
 
@@ -225,24 +224,20 @@ async def save_edit(call: types.CallbackQuery, _button: Button, manager: DialogM
     elif edit == "contacts":
         post_ad.contacts = ",".join(updated_field)
 
-    data: dict = {
-        "tag_category": post_ad.tag_category,
-        "tag_name": post_ad.tag_name,
-        "description": post_ad.description,
-        "price": post_ad.price,
-        "contacts": post_ad.contacts.split(","),
-        "currency_code": post_ad.currency_code,
-        "negotiable": post_ad.negotiable,
-        "photos": [m.photo_file_id for m in post_ad.related_messages] if post_ad.related_messages else [],
-        "post_link": make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id),
-        "mention": obj.from_user.get_mention(),
-        "updated_at": post_ad.updated_at,
-        "created_at": post_ad.created_at
-    }
-
     ad: Ad = Ad(
         state_class=post_ad.post_type,
-        **data
+        tag_category=post_ad.tag_category,
+        tag_name=post_ad.tag_name,
+        description=post_ad.description,
+        price=post_ad.price,
+        contacts=post_ad.contacts.split(","),
+        currency_code=post_ad.currency_code,
+        negotiable=post_ad.negotiable,
+        photos={m.photo_file_unique_id: m.photo_file_id for m in post_ad.related_messages} if post_ad.related_messages else {},
+        post_link=make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id),
+        mention=obj.from_user.get_mention(),
+        updated_at=post_ad.updated_at,
+        created_at=post_ad.created_at
     )
 
     if edit == "photos" and len(post_ad.related_messages) > 1:
@@ -285,12 +280,6 @@ async def save_edit(call: types.CallbackQuery, _button: Button, manager: DialogM
             text=ad.post()
         )
 
-    # if edit != "photos" and post_ad.related_messages:
-    #     await call.bot.edit_message_caption(
-    #         chat_id=config.tg_bot.private_group_id,
-    #         message_id=post_ad.admin_group_message_id,
-    #         caption=ad.post(where="admin_group")
-    #     )
     if edit != "photos":
         await call.bot.edit_message_text(
             chat_id=config.tg_bot.private_group_id,
