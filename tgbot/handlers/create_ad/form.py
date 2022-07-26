@@ -43,7 +43,7 @@ async def set_default(_, dialog_manager: DialogManager):
     widget_data = dialog_manager.current_context().widget_data
     db: DBCommands = dialog_manager.data.get("db_commands")
 
-    contact, pic, post = await db.get_values_of_restrictions()
+    contact, pic, post, max_active = await db.get_values_of_restrictions()
     limits: dict = {
         "contact_limit": contact,
         "pic_limit": pic,

@@ -7,12 +7,14 @@ from aiogram_dialog.widgets.kbd import Button
 
 from schedulers.functions import create_jobs
 from tgbot.config import Config
-from tgbot.handlers.create_ad.form import create_actions, get_current_file_id
+from tgbot.handlers.create_ad.form import create_actions, get_current_file_id, make_link_to_post
+from tgbot.keyboards.inline import manage_post
 from tgbot.misc.ad import Ad
 from tgbot.misc.states import Main
 from tgbot.models.post_ad import PostAd
 from tgbot.models.related_messages import RelatedMessage
 from tgbot.models.tags_name import TagName
+from tgbot.models.user import User
 from tgbot.services.db_commands import DBCommands
 
 
@@ -21,7 +23,7 @@ async def get_form_text(dialog_manager: DialogManager, **_kwargs):
     create_action = dialog_manager.current_context().start_data.get("heading")
     db: DBCommands = dialog_manager.data.get("db_commands")
 
-    contact, pic, post = await db.get_values_of_restrictions()
+    contact, pic, post, max_active = await db.get_values_of_restrictions()
     limits: dict = {
         "contact_limit": contact,
         "pic_limit": pic,
@@ -159,6 +161,7 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
 
     ad: Ad = Ad(
         state_class=state_class,
+
         **data
     )
 
@@ -230,10 +233,33 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
     )
 
     session.add(post_ad)
-    await session.commit()
 
     channel = await call.bot.get_chat(config.tg_bot.channel_id)
-    create_jobs(scheduler, call.from_user.id, post_ad.post_id, channel.id, channel.username)
+    ad.post_link = make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id)
+    create_jobs(scheduler, call.from_user.id, post_ad.post_id, channel.id, config.tg_bot.private_group_id, channel.username)
+    print("123??")
+    if not isinstance(sent_post, list) and sent_post.photo:
+        admin_group = await bot.send_photo(
+            chat_id=config.tg_bot.private_group_id,
+            photo=sent_post.photo[-1].file_id,
+            caption=ad.post(where="admin_group"),
+            reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id,
+                                     full_name=call.from_user.full_name, url=ad.post_link)
+        )
+    else:
+        print("else", call.from_user.full_name)
+        admin_group = await bot.send_message(
+            chat_id=config.tg_bot.private_group_id,
+            text=ad.post(where="admin_group"),
+            reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id,
+                                     full_name=call.from_user.full_name, url=ad.post_link)
+        )
+
+    user: User = await session.get(User, call.from_user.id)
+    user.posted_today += 1
+
+    post_ad.admin_group_message_id = admin_group.message_id
+    await session.commit()
 
     await call.answer("Объявление было успешно опубликовано в канале!")
     await manager.start(Main.main, mode=StartMode.RESET_STACK)

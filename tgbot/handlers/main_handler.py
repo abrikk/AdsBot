@@ -37,10 +37,13 @@ async def switch_to_make_ad(call: types.CallbackQuery, _button: Button, manager:
 
     db: DBCommands = manager.data.get("db_commands")
     common_post_limit: int = await db.get_post_limit()
-    used_limit: int = await db.get_user_used_limit(user.user_id)
+    print(user.posted_today)
+    print(common_post_limit)
+    print(user.posted_today == common_post_limit)
+    print(user.posted_today == user.post_limit)
 
-    if user.post_limit and used_limit == user.post_limit or used_limit == common_post_limit:
-        await call.answer(text="Вы исчерпали лимит публикаций объявлений в день. Попробуйте завтра.")
+    if user.post_limit and user.posted_today >= user.post_limit or not user.post_limit and user.posted_today >= common_post_limit:
+        await call.answer(text="Вы исчерпали лимит публикаций объявлений в день. Попробуйте завтра.", show_alert=True)
         return
 
     await manager.dialog().next()

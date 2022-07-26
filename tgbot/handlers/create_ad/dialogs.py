@@ -30,15 +30,15 @@ def get_widgets() -> tuple:
             )
         ),
         Row(
-            SwitchTo(
-                text=Const("⬅️ Назад"),
-                id="to_previous",
-                state=Form.tag
-            ),
             Start(
                 text=Const("🔚 В главное меню"),
                 id="to_main",
                 state=Main.main
+            ),
+            SwitchTo(
+                text=Const("⬅️ Назад"),
+                id="to_previous",
+                state=Form.tag
             )
         ),
         Button(

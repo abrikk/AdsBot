@@ -19,6 +19,7 @@ from tgbot.config import Config
 from tgbot.constants import OWNER, ADMIN, USER, BANNED
 from tgbot.filters.inline_filter import InlineFilter
 from tgbot.filters.is_user import IsUser
+from tgbot.filters.manage_filter import ManageUser
 from tgbot.handlers.create_ad.form import when_not, get_user_mention
 from tgbot.misc.states import Main, ShowUser
 from tgbot.models.post_ad import PostAd
@@ -27,7 +28,11 @@ from tgbot.services.db_commands import DBCommands
 
 
 async def start_show_user_dialog(message: types.Message, dialog_manager: DialogManager):
-    user_id = message.text.split(":")[-1].strip()
+    print("start_show_user_dialog")
+    if message.is_command() and message.get_args() and message.get_command() == "/start":
+        user_id = message.get_args()
+    else:
+        user_id = message.text.split(":")[-1].strip()
     print(user_id)
     await dialog_manager.start(
         state=ShowUser.true,
@@ -39,21 +44,32 @@ async def start_show_user_dialog(message: types.Message, dialog_manager: DialogM
 async def set_default_data(_, dialog_manager: DialogManager):
     user_id: int = dialog_manager.current_context().start_data.get("user_id")
     db: DBCommands = dialog_manager.data.get("db_commands")
-    post_limit: int = await db.get_value_of_restriction("post")
     user_role: str = await db.get_user_role(user_id)
     user_post_limit: int = await db.get_user_post_limit(user_id)
-    checked: bool = True if (not user_post_limit) or user_post_limit == post_limit else False
+    user_max_active: int = await db.get_user_max_active(user_id)
 
-    value = user_post_limit if user_post_limit else post_limit
+    global_post_limit: int = await db.get_value_of_restriction(uid="post")
+    global_max_active: int = await db.get_value_of_restriction(uid="max_active")
+
+    checked_limit: bool = True if (not user_post_limit) or user_post_limit == global_post_limit else False
+    checked_active: bool = True if (not user_max_active) or user_max_active == global_max_active else False
+    print(checked_limit)
+    limit_value: int = user_post_limit if user_post_limit else global_post_limit
+    max_active_value: int = user_max_active if user_max_active else global_max_active
 
     dialog_manager.current_context().widget_data["default_role"] = user_role
     await dialog_manager.dialog().find('user_role').set_checked(event="", item_id=user_role)
-    await dialog_manager.dialog().find('default_post_limit').set_checked(event="", checked=checked)
-    await dialog_manager.dialog().find('post_limit_counter').set_value(value=value)
+
+    await dialog_manager.dialog().find('default_post_limit').set_checked(event="", checked=checked_limit)
+    await dialog_manager.dialog().find('post_limit_counter').set_value(value=limit_value)
+
+    await dialog_manager.dialog().find('default_max_active_post').set_checked(event="", checked=checked_active)
+    await dialog_manager.dialog().find('max_active_post').set_value(value=max_active_value)
 
 
 async def get_show_user_text(dialog_manager: DialogManager, **_kwargs) -> dict:
-    searched_user_id: int = dialog_manager.current_context().start_data.get("user_id")
+    context = dialog_manager.current_context()
+    searched_user_id: int = context.start_data.get("user_id")
     session = dialog_manager.data.get("session")
     user: User = dialog_manager.data.get("user")
     searched_user: User = await session.get(User, searched_user_id)
@@ -80,7 +96,7 @@ async def get_show_user_text(dialog_manager: DialogManager, **_kwargs) -> dict:
     if user.role == OWNER:
         available_roles.append(("Администратор", ADMIN))
 
-    if role := dialog_manager.current_context().widget_data.get("user_role"):
+    if role := context.widget_data.get("user_role") != context.widget_data.get("default_role"):
         user_text = f"Вы уверены что хотите изменить роль пользователя на {role}?\n\n" + user_text
 
     restrict_options: list = [(i + 'д', i) for i in ('1', '3', '7', '14', '30')]
@@ -119,7 +135,6 @@ async def change_user_role(call: types.CallbackQuery, _widget: Any, manager: Dia
 
     await db.update_user_role(user_id, role)
     await call.answer("Роль пользователя изменена на: " + role)
-    print(widget_data.get("default_role"))
     if role == BANNED:
         support_ids: list[int, str, str | None, str | None] = await db.get_support_team()
         support_mentions: str = ", ".join([
@@ -225,6 +240,10 @@ def show_post_limit(_data: Dict, _widget: Whenable, manager: DialogManager) -> b
     return manager.current_context().widget_data.get("post_limit") is True
 
 
+def show_max_active_post(_data: Dict, _widget: Whenable, manager: DialogManager) -> bool:
+    return manager.current_context().widget_data.get("max_active") is True
+
+
 async def restrict_user(call: types.CallbackQuery, _widget: Any, manager: DialogManager, days: str):
     user_id: int = manager.current_context().start_data.get("user_id")
     session = manager.data.get("session")
@@ -237,6 +256,7 @@ async def restrict_user(call: types.CallbackQuery, _widget: Any, manager: Dialog
 
 
 async def change_post_limit_value(_call: types.CallbackQuery, widget: ManagedCounterAdapter, manager: DialogManager):
+    print("u are wronff")
     user_id: int = manager.current_context().start_data.get("user_id")
     session = manager.data.get("session")
     db: DBCommands = manager.data.get("db_commands")
@@ -251,18 +271,26 @@ async def change_post_limit_value(_call: types.CallbackQuery, widget: ManagedCou
     await session.commit()
 
 
-async def set_default_post_limit(_call: types.CallbackQuery, _widget: ManagedCheckboxAdapter, manager: DialogManager):
-    print("1")
+async def set_default_limit(_call: types.CallbackQuery, widget: ManagedCheckboxAdapter, manager: DialogManager):
+    print("YOU ARE COMPLETELY WRONG")
     user_id: int = manager.current_context().start_data.get("user_id")
     session = manager.data.get("session")
     db: DBCommands = manager.data.get("db_commands")
     user: User = await session.get(User, user_id)
-    global_post_limit: int = await db.get_value_of_restriction(uid="post")
-    print(global_post_limit)
-    user.post_limit = None
-    await manager.dialog().find('post_limit_counter').set_value(value=global_post_limit)
+    widget_id = widget.widget.widget_id
+    print(widget_id)
+    if widget_id == "default_post_limit":
+        global_post_limit: int = await db.get_value_of_restriction(uid="post")
+        user.post_limit = None
+        await manager.dialog().find('post_limit_counter').set_value(value=global_post_limit)
+        manager.current_context().widget_data["post_limit"] = False
+    else:
+        global_max_active: int = await db.get_value_of_restriction(uid="max_active")
+        user.max_active = None
+        await manager.dialog().find('post_limit_counter').set_value(value=global_max_active)
+        manager.current_context().widget_data["max_active_post"] = False
+
     await session.commit()
-    manager.current_context().widget_data["post_limit"] = False
 
 
 show_user_dialog = Dialog(
@@ -297,15 +325,35 @@ show_user_dialog = Dialog(
                 id="post_limit_counter",
                 text=Format("{value}"),
                 min_value=1,
-                on_value_changed=change_post_limit_value
+                on_click=change_post_limit_value
             ),
             Checkbox(
                 checked_text=Const("✔️ По умолчанию"),
                 unchecked_text=Const("️ По умолчанию"),
                 id="default_post_limit",
-                on_state_changed=set_default_post_limit
+                on_click=set_default_limit
             ),
             when=show_post_limit
+        ),
+        Checkbox(
+            checked_text=Const("🔘 Изменить лимит активных постов"),
+            unchecked_text=Const("⚪️ Изменить лимит активных постов"),
+            id="max_active"
+        ),
+        Group(
+            Counter(
+                id="max_active_post",
+                text=Format("{value}"),
+                min_value=1,
+                on_click=change_post_limit_value
+            ),
+            Checkbox(
+                checked_text=Const("✔️ По умолчанию"),
+                unchecked_text=Const("️ По умолчанию"),
+                id="default_max_active_post",
+                on_click=set_default_limit
+            ),
+            when=show_max_active_post
         ),
         Group(
             Radio(
@@ -388,4 +436,4 @@ show_user_dialog = Dialog(
 
 
 def register_show_product(dp: Dispatcher):
-    dp.register_message_handler(start_show_user_dialog, InlineFilter(), IsUser())
+    dp.register_message_handler(start_show_user_dialog, ManageUser() | (InlineFilter() and IsUser()))

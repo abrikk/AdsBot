@@ -157,7 +157,7 @@ class Ad:
 
         return '\n\n'.join(confirm_list)
 
-    def post(self) -> str:
+    def post(self, where: str = None) -> str:
         if self.state_class in ("sell", "rent"):
             negotiable: str = '(торг уместен)' if self.negotiable else '(цена окончательна)'
         else:
@@ -175,6 +175,10 @@ class Ad:
             post_list.insert(2, f"Цена: {str(self.price) + ' ' + self.currency + ' ' + negotiable or ''}")
         elif self.price:
             post_list.insert(2, f"Цена: {str(self.price) + ' ' + self.currency}")
+
+        if where == "admin_group":
+            post_list.append(f"{self.make_datetime_text()}")
+            post_list.insert(0, f"Объявление: {self.post_link}")
 
         return '\n\n'.join(post_list)
 

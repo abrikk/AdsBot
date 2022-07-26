@@ -27,6 +27,11 @@ class DBCommands:
         request = await self.session.execute(sql)
         return request.scalars().first()
 
+    async def get_user_max_active(self, user_id: int):
+        sql = select(User.max_active).where(User.user_id == user_id)
+        request = await self.session.execute(sql)
+        return request.scalars().first()
+
     async def update_user_role(self, user_id: int, role: str):
         sql = update(User).where(User.user_id == user_id).values(role=role)
         result = await self.session.execute(sql)
@@ -164,18 +169,18 @@ class DBCommands:
         request = await self.session.execute(sql)
         return request.all()
 
-    async def get_user_used_limit(self, user_id: int):
-        sql = select(func.count("*")).select_from(PostAd).where(
-            and_(
-                PostAd.user_id == user_id,
-                PostAd.created_at.cast(Date) == func.now().cast(Date)
-            )
-        )
-        request = await self.session.execute(sql)
-        return request.first()
+    # async def get_user_used_limit(self, user_id: int):
+    #     sql = select(func.count("*")).select_from(PostAd).where(
+    #         and_(
+    #             PostAd.user_id == user_id,
+    #             PostAd.created_at.cast(Date) == func.now().cast(Date)
+    #         )
+    #     )
+    #     request = await self.session.execute(sql)
+    #     return request.first()
 
     async def get_post_limit(self):
         sql = select(Restriction.number).where(Restriction.uid == 'post')
         request = await self.session.execute(sql)
-        return request.first
+        return request.scalars().first()
 

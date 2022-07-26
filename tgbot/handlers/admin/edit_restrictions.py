@@ -19,7 +19,8 @@ async def get_restriction_text(dialog_manager: DialogManager, **_kwargs):
             f"для всех пользователей):\n\n"
             f"Максимальное количество контактов в объявлении: <code>{values[0]}</code>\n"
             f"Максимальное количество картинок в объявлении: <code>{values[1]}</code>\n"
-            f"Максимальное количество постов в день: <code>{values[2]}</code>\n")
+            f"Максимальное количество постов в день: <code>{values[2]}</code>\n"
+            f"Максимальное количество активных объявлений: <code>{values[2]}</code>\n")
 
     return {"restriction_text": text}
 

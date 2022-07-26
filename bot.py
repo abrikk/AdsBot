@@ -6,8 +6,10 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.contrib.fsm_storage.redis import RedisStorage2
 from aiogram.types import AllowedUpdates
 from aiogram_dialog import DialogRegistry
+from apscheduler.triggers.cron import CronTrigger
 
 from schedulers.base import setup_scheduler
+from schedulers.jobs import reset_for_all_users
 from setup import register_all_dialogs, register_all_handlers
 from tgbot.config import load_config, Config
 from tgbot.filters.admin import AdminFilter
@@ -50,6 +52,13 @@ async def main():
     registry = DialogRegistry(dp)
 
     scheduler = setup_scheduler(bot=bot, config=config, storage=storage, session=sessionmaker)
+    scheduler.add_job(
+        reset_for_all_users,
+        trigger=CronTrigger(hour=0, minute=0, second=0, jitter=300),
+        # trigger=CronTrigger(minute="*", second=0),
+        id="reset_posted_today",
+        replace_existing=True
+    )
     scheduler.start()
     bot["scheduler"] = scheduler
 

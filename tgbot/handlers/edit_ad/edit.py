@@ -8,10 +8,12 @@ from aiogram_dialog import DialogManager, StartMode
 from aiogram_dialog.manager.protocols import ManagedDialogAdapterProto, ShowMode
 from aiogram_dialog.widgets.kbd import Button, Select, Back
 from aiogram_dialog.widgets.managed import ManagedWidgetAdapter
+from apscheduler.jobstores.base import JobLookupError
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from tgbot.config import Config
 from tgbot.handlers.create_ad.form import make_link_to_post
+from tgbot.keyboards.inline import manage_post
 from tgbot.misc.ad import Ad
 from tgbot.misc.states import MyAds, ShowMyAd
 
@@ -133,10 +135,22 @@ async def delete_post_ad(call: types.CallbackQuery, _button: Button, manager: Di
     except MessageToDeleteNotFound:
         logging.warning("Message to delete not found")
 
-    scheduler.remove_job("ask_" + str(post_id))
-    scheduler.remove_job("check_" + str(post_id))
+    try:
+        scheduler.remove_job("ask_" + str(post_ad.post_id))
+        scheduler.remove_job("check_" + str(post_ad.post_id))
+    except JobLookupError:
+        logging.warning("Job not found")
+
     await session.delete(post_ad)
     await session.commit()
+
+    await call.bot.edit_message_text(
+        text=f"#УдаленоПользователем \n\n"
+             f"Пользователь {call.from_user.get_mention()} удалил своё объявление ❕",
+        chat_id=config.tg_bot.private_group_id,
+        message_id=post_ad.admin_group_message_id,
+        reply_markup=manage_post(call.from_user.id, call.from_user.full_name, argument="only_search_user")
+    )
 
     await call.answer(text="Объявление было успешно удалено!")
 
@@ -267,6 +281,19 @@ async def save_edit(call: types.CallbackQuery, _button: Button, manager: DialogM
             chat_id=config.tg_bot.channel_id,
             message_id=post_ad.post_id,
             text=ad.post()
+        )
+
+    if edit != "photos" and post_ad.related_messages:
+        await call.bot.edit_message_caption(
+            chat_id=config.tg_bot.private_group_id,
+            message_id=post_ad.admin_group_message_id,
+            caption=ad.post(where="admin_group")
+        )
+    elif edit != "photos":
+        await call.bot.edit_message_text(
+            chat_id=config.tg_bot.private_group_id,
+            message_id=post_ad.admin_group_message_id,
+            text=ad.post(where="admin_group")
         )
 
     await session.commit()

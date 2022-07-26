@@ -8,6 +8,7 @@ from tgbot.services.db_base import Base
 class PostAd(Base):
     __tablename__ = "ads"
     post_id = Column(BigInteger, primary_key=True)
+    admin_group_message_id = Column(BigInteger, unique=True)
     post_type = Column(String(length=16))
     user_id = Column(BigInteger, nullable=False)
     tag_category = Column(String(length=64))

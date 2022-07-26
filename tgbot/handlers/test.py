@@ -11,6 +11,8 @@ from sqlalchemy.orm import sessionmaker
 
 from tgbot.config import Config
 # 1566111340, 304536646
+from tgbot.filters.manage_filter import ManageUser
+from tgbot.keyboards.inline import manage_post
 from tgbot.models.user import User
 
 
@@ -50,11 +52,14 @@ async def test_1(message: types.Message):
 # 8910
 # AgACAgIAAxkBAAIXJ2LSgO_PFQXv3h0fqrXMQWavWqfTAALLvDEbjj2ZStu7MGbidBzDAQADAgADeQADKQQ
 async def test_2(message: types.Message, config: Config):
-    # CgACAgIAAxkBAAIoP2LacjY5j_6Kd-ZFVN_CdGqxWUWbAALLGQACFeTZSrIKxiCUKz3FKQQ
-    await message.answer_document("CgACAgIAAxkBAAIoP2LacjY5j_6Kd-ZFVN_CdGqxWUWbAALLGQACFeTZSrIKxiCUKz3FKQQ")
-    # print(message)
-    # print(message.document)
-    # print(message.document.file_id)
+    print(message.get_args())
+    print(message.text)
+    await message.answer(message.message_id,
+                         reply_markup=manage_post(123))
+
+
+async def test_3(message: types.Message):
+    await message.answer(message.chat.id)
 
 
 async def delete_all_jobs(message: types.Message):
@@ -66,9 +71,10 @@ async def delete_all_jobs(message: types.Message):
 
 def register_test(dp: Dispatcher):
     dp.register_message_handler(test_1, Command("delete_me"))
-    dp.register_message_handler(test_2, Command("sent_m"))
+    dp.register_message_handler(test_2, Command("manage_post"))
     dp.register_message_handler(test, Command("test"))
     dp.register_message_handler(show_jobs, Command("show_jobs"))
+    dp.register_message_handler(test_3, Command("chat_id"))
     dp.register_message_handler(delete_all_jobs, Command("delete_all_jobs"))
     # dp.register_message_handler(test_2, content_types="any")
 

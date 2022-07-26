@@ -9,6 +9,7 @@ class UserDB(LifetimeControllerMiddleware):
     skip_patterns = ["error", "update"]
 
     async def pre_process(self, obj, data, *args):
+        print(type(obj))
         session = data.get("session")
         user = await session.get(User, obj.from_user.id)
 

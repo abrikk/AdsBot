@@ -86,7 +86,22 @@ async def search_user(query: types.InlineQuery, db_commands):
                            next_offset=str(query_offset + 50))
 
 
+async def manage_user(query: types.InlineQuery, session):
+    user_id: int = int(query.query.split(":")[-1].strip())
+    user: User = await session.get(User, user_id)
+
+    await query.answer(
+        results=[],
+        cache_time=3,
+        is_personal=True,
+        switch_pm_text=quote_html("Пользователь: " + user.first_name + (user.last_name and " " + user.last_name or "")),
+        switch_pm_parameter=str(user.user_id),
+    )
+
+
 def register_inline_mode(dp: Dispatcher):
     # dp.register_inline_handler(all_queries, IsNotSender())
     dp.register_inline_handler(search_user, Text(contains="пользователи"), AdminFilter(),
                                ChatTypeFilter(types.ChatType.SENDER))
+    dp.register_inline_handler(manage_user, Text(contains="управление пользователем"), AdminFilter(),
+                               ChatTypeFilter([types.ChatType.GROUP, types.ChatType.SUPERGROUP]))
