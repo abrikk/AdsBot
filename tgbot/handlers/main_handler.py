@@ -2,7 +2,7 @@ from typing import Dict
 
 from aiogram import types
 from aiogram_dialog import Dialog, Window, DialogManager
-from aiogram_dialog.widgets.kbd import Start, Group, Back, Button
+from aiogram_dialog.widgets.kbd import Start, Group, Back, Button, Next
 from aiogram_dialog.widgets.text import Format, Const
 from aiogram_dialog.widgets.when import Whenable
 
@@ -36,11 +36,14 @@ async def switch_to_make_ad(call: types.CallbackQuery, _button: Button, manager:
         return
 
     db: DBCommands = manager.data.get("db_commands")
+    global_max_active: int = await db.get_value_of_restriction(uid="max_active")
+    user_current_active: int = await db.count_user_active_ads(user_id=user.user_id)
+
+    if user.max_active and user_current_active >= user.max_active or not user.max_active and user_current_active >= global_max_active:
+        await call.answer(text="Вы достигли максимальный лимит активных объявлений.", show_alert=True)
+        return
+
     common_post_limit: int = await db.get_post_limit()
-    print(user.posted_today)
-    print(common_post_limit)
-    print(user.posted_today == common_post_limit)
-    print(user.posted_today == user.post_limit)
 
     if user.post_limit and user.posted_today >= user.post_limit or not user.post_limit and user.posted_today >= common_post_limit:
         await call.answer(text="Вы исчерпали лимит публикаций объявлений в день. Попробуйте завтра.", show_alert=True)
@@ -90,8 +93,7 @@ main_dialog = Dialog(
         Button(
             text=Const("🪄 Создать объявление"),
             id="make_ad",
-            on_click=switch_to_make_ad,
-            # state=Main.make_ad
+            on_click=switch_to_make_ad
         ),
         Start(
             text=Const("🌀 Мои объявления"),
@@ -111,15 +113,16 @@ main_dialog = Dialog(
             when=is_admin
         ),
         state=Main.main,
-        getter=get_main_text
+        getter=get_main_text,
+        preview_add_transitions=[Next()]
     ),
     Window(
         Const("Выберите рубрику вашего объявления:"),
-        Button(
-          text=Const("default"),
-          id="default",
-          on_click=make_fucking_ad
-        ),
+        # Button(
+        #   text=Const("default"),
+        #   id="default",
+        #   on_click=make_fucking_ad
+        # ),
         Group(
             Start(
                 text=Const("🟠 Куплю"),

@@ -6,6 +6,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.contrib.fsm_storage.redis import RedisStorage2
 from aiogram.types import AllowedUpdates
 from aiogram_dialog import DialogRegistry
+from aiogram_dialog.tools import render_transitions
 from apscheduler.triggers.cron import CronTrigger
 
 from schedulers.base import setup_scheduler
@@ -52,14 +53,15 @@ async def main():
     registry = DialogRegistry(dp)
 
     scheduler = setup_scheduler(bot=bot, config=config, storage=storage, session=sessionmaker)
+    scheduler.start()
+
     scheduler.add_job(
         reset_for_all_users,
-        trigger=CronTrigger(hour=0, minute=0, second=0, jitter=300),
+        trigger=CronTrigger(hour=0, minute=0, second=0, jitter=300, timezone='Europe/Kiev'),
         # trigger=CronTrigger(minute="*", second=0),
         id="reset_posted_today",
         replace_existing=True
     )
-    scheduler.start()
     bot["scheduler"] = scheduler
 
     await on_startup_notify(bot, config)
@@ -69,6 +71,7 @@ async def main():
     register_all_filters(dp)
     register_all_handlers(dp)
     register_all_dialogs(registry)
+    render_transitions(registry)
 
     # start
     try:

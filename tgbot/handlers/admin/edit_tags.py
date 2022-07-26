@@ -82,7 +82,8 @@ edit_tags_dialog = Dialog(
             mode=StartMode.RESET_STACK
         ),
         state=ManageTags.main,
-        getter=get_main_tags_text
+        getter=get_main_tags_text,
+        preview_add_transitions=[SwitchTo(Const(''), "hint", ManageTags.tags)]
     ),
 
     Window(
@@ -147,7 +148,8 @@ edit_tags_dialog = Dialog(
             type_factory=validate_category,
             on_success=add_category,
         ),
-        state=ManageTags.add_category
+        state=ManageTags.add_category,
+        preview_add_transitions=[SwitchTo(Const(''), "hint", ManageTags.main)]
     ),
 
     Window(
@@ -163,7 +165,8 @@ edit_tags_dialog = Dialog(
                 text=Const("➖ Удалить теги"),
                 id="del_tags",
                 state=ManageTags.add_del_tags,
-                on_click=save_action
+                on_click=save_action,
+                when="show_delete_tags"
             )
         ),
         SwitchTo(
@@ -192,7 +195,8 @@ edit_tags_dialog = Dialog(
         ),
         MessageInput(func=validate_tags),
         state=ManageTags.add_del_tags,
-        getter=get_add_del_tags_text
+        getter=get_add_del_tags_text,
+        preview_add_transitions=[SwitchTo(Const(''), "hint", ManageTags.confirm_tags)]
     ),
 
     Window(
@@ -201,7 +205,8 @@ edit_tags_dialog = Dialog(
             SwitchTo(
                 text=Const("Нет"),
                 id="back_to_main",
-                state=ManageTags.main
+                state=ManageTags.main,
+                on_click=clear_data
             ),
             Button(
                 text=Const("Да"),
@@ -210,7 +215,8 @@ edit_tags_dialog = Dialog(
             )
         ),
         state=ManageTags.confirm_categories,
-        getter=get_confirm_categories_text
+        getter=get_confirm_categories_text,
+        preview_add_transitions=[SwitchTo(Const(''), "hint", ManageTags.main)]
     ),
 
     Window(
@@ -228,6 +234,7 @@ edit_tags_dialog = Dialog(
             )
         ),
         state=ManageTags.confirm_tags,
-        getter=get_confirm_tags_text
+        getter=get_confirm_tags_text,
+        preview_add_transitions=[SwitchTo(Const(''), "hint", ManageTags.main)]
     )
 )

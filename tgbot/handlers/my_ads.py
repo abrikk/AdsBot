@@ -66,6 +66,7 @@ my_ads_dialog = Dialog(
             mode=StartMode.RESET_STACK
         ),
         state=MyAds.show,
-        getter=get_my_ads_text
+        getter=get_my_ads_text,
+        preview_add_transitions=[Start(Const(""), "hint", ShowMyAd.true)]
     )
 )

@@ -1,8 +1,8 @@
 """initial
 
-Revision ID: 062c088691ac
+Revision ID: 40a1deff4ef7
 Revises: 
-Create Date: 2022-07-25 22:35:13.326044
+Create Date: 2022-07-26 18:41:03.284023
 
 """
 from alembic import op
@@ -15,7 +15,7 @@ from tgbot.models.restriction import Restriction
 from tgbot.models.tag_category import TagCategory
 from tgbot.models.tags_name import TagName
 
-revision = '062c088691ac'
+revision = '40a1deff4ef7'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -96,7 +96,8 @@ def upgrade() -> None:
                     sa.Column('category', sa.String(length=64), nullable=True),
                     sa.Column('name', sa.String(length=64), nullable=True),
                     sa.ForeignKeyConstraint(['category'], ['tag_category.category'], ondelete='CASCADE'),
-                    sa.PrimaryKeyConstraint('id')
+                    sa.PrimaryKeyConstraint('id'),
+                    sa.UniqueConstraint('category', 'name', name='unique_tag_name')
                     )
 
     bind = op.get_bind()

@@ -237,22 +237,21 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
     channel = await call.bot.get_chat(config.tg_bot.channel_id)
     ad.post_link = make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id)
     create_jobs(scheduler, call.from_user.id, post_ad.post_id, channel.id, config.tg_bot.private_group_id, channel.username)
-    print("123??")
-    if not isinstance(sent_post, list) and sent_post.photo:
-        admin_group = await bot.send_photo(
-            chat_id=config.tg_bot.private_group_id,
-            photo=sent_post.photo[-1].file_id,
-            caption=ad.post(where="admin_group"),
-            reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id,
-                                     full_name=call.from_user.full_name, url=ad.post_link)
-        )
-    else:
-        print("else", call.from_user.full_name)
-        admin_group = await bot.send_message(
-            chat_id=config.tg_bot.private_group_id,
-            text=ad.post(where="admin_group"),
-            reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id,
-                                     full_name=call.from_user.full_name, url=ad.post_link)
+
+    # if not isinstance(sent_post, list) and sent_post.photo:
+    #     admin_group = await bot.send_photo(
+    #         chat_id=config.tg_bot.private_group_id,
+    #         photo=sent_post.photo[-1].file_id,
+    #         caption=ad.post(where="admin_group"),
+    #         reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id,
+    #                                  full_name=call.from_user.full_name, url=ad.post_link)
+    #     )
+    # else:
+    admin_group = await bot.send_message(
+        chat_id=config.tg_bot.private_group_id,
+        text=ad.post(where="admin_group"),
+        reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id,
+                                 full_name=call.from_user.full_name, url=ad.post_link)
         )
 
     user: User = await session.get(User, call.from_user.id)

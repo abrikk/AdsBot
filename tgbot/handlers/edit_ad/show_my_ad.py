@@ -3,7 +3,8 @@ import operator
 from aiogram import types
 from aiogram_dialog import Dialog, Window, StartMode, DialogManager
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import Start, Button, Row, Back, SwitchTo, Select, Next, Column, Radio, Group, Checkbox
+from aiogram_dialog.widgets.kbd import Start, Button, Row, Back, SwitchTo, Select, Next, Column, Radio, Group, Checkbox, \
+    Url
 from aiogram_dialog.widgets.text import Format, Const
 
 from tgbot.handlers.create_ad.form import currency_selected, get_currency_data
@@ -14,29 +15,28 @@ from tgbot.handlers.edit_ad.getters import get_edit_options, get_edit_text, get_
 from tgbot.misc.states import ShowMyAd, MyAds
 
 
-async def get_widget_data(dialog_manager: DialogManager, **_kwargs):
-    print(dialog_manager.current_context().widget_data)
-    return []
-
 show_my_ad_dialog = Dialog(
     Window(
         Format(text="{preview_text}", when="preview_text"),
-        Button(
-            text=Const("Редактировать"),
-            id="edit_ad",
-            on_click=Next()
+        Url(
+            text=Const("Перейти к объявлению"),
+            url=Format("{url}"),
+        ),
+        Next(
+            text=Const("🛠 Редактировать"),
         ),
         SwitchTo(
-            text=Const("Удалить"),
+            text=Const("🗑 Удалить"),
             id="delete_post",
             state=ShowMyAd.confirm_delete
         ),
         Start(
-            text=Const("Назад"),
+            text=Const("🔙 Назад"),
             id="back_to_ma_ads",
             state=MyAds.show,
             mode=StartMode.RESET_STACK,
         ),
+        disable_web_page_preview=True,
         state=ShowMyAd.true,
         getter=get_show_my_ad_text
     ),
@@ -54,7 +54,8 @@ show_my_ad_dialog = Dialog(
         ),
         Back(text=Const("Назад")),
         state=ShowMyAd.show_edit,
-        getter=get_edit_options
+        getter=get_edit_options,
+        preview_add_transitions=[Next()]
     ),
     Window(
         Format(text="{edit_text}", when="edit_text"),
@@ -105,7 +106,8 @@ show_my_ad_dialog = Dialog(
             content_types=[types.ContentType.TEXT, types.ContentType.PHOTO]
         ),
         state=ShowMyAd.edit,
-        getter=[get_can_save_edit, get_currency_data, get_edit_text]
+        getter=[get_can_save_edit, get_currency_data, get_edit_text],
+        preview_add_transitions=[SwitchTo(Const(""), "hint", ShowMyAd.true)]
     ),
     Window(
         Format("Объвление которое будет удалено: {post_link}\n\n"
@@ -123,7 +125,7 @@ show_my_ad_dialog = Dialog(
             )
         ),
         state=ShowMyAd.confirm_delete,
-        getter=get_post_link
-    ),
-    getter=get_widget_data
+        getter=get_post_link,
+        preview_add_transitions=[Start(Const(""), "hint", MyAds.show)]
+    )
 )

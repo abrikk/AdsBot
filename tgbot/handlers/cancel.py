@@ -1,5 +1,5 @@
 from aiogram import types, Dispatcher
-from aiogram.dispatcher.filters import Command
+from aiogram.dispatcher.filters import Command, ChatTypeFilter
 from aiogram_dialog import DialogManager
 
 
@@ -11,4 +11,4 @@ async def cancel(message: types.Message, dialog_manager: DialogManager):
 
 
 def register_cancel(dp: Dispatcher):
-    dp.register_message_handler(cancel, Command("cancel"))
+    dp.register_message_handler(cancel, Command("cancel"), ChatTypeFilter(types.ChatType.PRIVATE))

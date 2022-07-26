@@ -36,7 +36,7 @@ async def get_show_my_ad_text(dialog_manager: DialogManager, **_kwargs):
         **data
     )
 
-    return {"preview_text": ad.preview(where="edit")}
+    return {"preview_text": ad.preview(where="edit"), "url": ad.post_link}
 
 
 async def get_edit_options(dialog_manager: DialogManager, **_kwargs):
@@ -111,7 +111,7 @@ async def get_edit_text(dialog_manager: DialogManager, **_kwargs):
         current_data_text = "Текущие контактные данные: " + current_contact
     elif edit == "price":
         currencies: dict = {'USD': '$', 'EUR': '€', 'RUB': '₽', 'UAH': '₴'}
-        current_data_text = "Текущая цена: " + str(current_data.get(edit)) + " " + currencies.get(post_ad.currency_code)
+        current_data_text = "Текущая цена: " + str(f'{current_data.get(edit):,}') + " " + currencies.get(post_ad.currency_code)
     else:
         current_data_text = "Текущее описание: " + hitalic(current_data.get(edit))
 

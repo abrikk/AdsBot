@@ -1,5 +1,5 @@
 from aiogram import types, Dispatcher
-from aiogram.dispatcher.filters import CommandStart
+from aiogram.dispatcher.filters import CommandStart, ChatTypeFilter
 from aiogram_dialog import DialogManager, StartMode
 
 from tgbot.config import Config
@@ -9,7 +9,6 @@ from tgbot.models.user import User
 
 
 async def start_bot(message: types.Message, config: Config, session, dialog_manager: DialogManager):
-    print("here?")
     user_id = message.from_user.id
     user: User = await session.get(User, user_id)
 
@@ -19,7 +18,6 @@ async def start_bot(message: types.Message, config: Config, session, dialog_mana
             role = OWNER
         elif user_id in config.tg_bot.admin_ids or role_in_channel == 'administrator':
             role: str = ADMIN
-            role: str = OWNER
         elif role_in_channel == BANNED:
             role: str = BANNED
         else:
@@ -49,5 +47,5 @@ async def start_bot(message: types.Message, config: Config, session, dialog_mana
 
 
 def register_start(dp: Dispatcher):
-    dp.register_message_handler(start_bot, CommandStart())
+    dp.register_message_handler(start_bot, CommandStart(), ChatTypeFilter(types.ChatType.PRIVATE))
 

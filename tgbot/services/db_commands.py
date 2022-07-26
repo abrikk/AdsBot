@@ -1,4 +1,4 @@
-from sqlalchemy import select, or_, update, and_, func, Date
+from sqlalchemy import select, or_, update, and_, func, Date, String
 
 from tgbot.models.post_ad import PostAd
 from tgbot.models.restriction import Restriction
@@ -50,7 +50,10 @@ class DBCommands:
             sql = sql.where(
                 or_(
                     User.first_name.ilike(f"%{like}%"),
-                    User.last_name.ilike(f"%{like}%")
+                    User.last_name.ilike(f"%{like}%"),
+                    User.username.ilike(f"%{like}%"),
+                    User.user_id.cast(String).ilike(f"%{like}%"),
+                    User.created_at.cast(String).ilike(f"%{like}%")
                 )
             )
 
@@ -181,6 +184,13 @@ class DBCommands:
 
     async def get_post_limit(self):
         sql = select(Restriction.number).where(Restriction.uid == 'post')
+        request = await self.session.execute(sql)
+        return request.scalars().first()
+
+    async def count_user_active_ads(self, user_id: int):
+        sql = select(func.count("*")).select_from(PostAd).where(
+            PostAd.user_id == user_id
+        )
         request = await self.session.execute(sql)
         return request.scalars().first()
 

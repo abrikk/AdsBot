@@ -174,7 +174,7 @@ class Ad:
         if self.price and self.state_class in ("sell", "rent"):
             post_list.insert(2, f"Цена: {str(self.price) + ' ' + self.currency + ' ' + negotiable or ''}")
         elif self.price:
-            post_list.insert(2, f"Цена: {str(self.price) + ' ' + self.currency}")
+            post_list.insert(2, f"Желаемая цена: {str(self.price) + ' ' + self.currency}")
 
         if where == "admin_group":
             post_list.append(f"{self.make_datetime_text()}")

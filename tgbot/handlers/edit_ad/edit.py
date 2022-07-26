@@ -75,13 +75,14 @@ async def edit_input(message: types.Message, _dialog: ManagedDialogAdapterProto,
                 await message.answer("Цена идентична с текущей ценой. Введите другую цену.")
                 return
 
-            if not (price > 0.01):
+            if not (1 <= price <= 999_999_999):
                 raise ValueError
 
             widget_data["price"] = price
         except ValueError:
             manager.show_mode = ShowMode.EDIT
-            await message.answer("Цена должна быть числом и быть больше 0.01. Попробуйте еще раз.")
+            await message.answer("Цена должна быть числом и быть в промежутке от <code>1</code> до "
+                                 "<code>999999999</code>. Попробуйте еще раз.")
 
     elif edit == "contacts":
         contact_limit: Restriction = await session.get(Restriction, "contact")
@@ -173,6 +174,7 @@ async def save_edit_option(_call: types.CallbackQuery, _widget: ManagedWidgetAda
 
 
 async def clear_data(_call: types.CallbackQuery, _button: Button | Back, manager: DialogManager):
+    print(manager.current_context().widget_data)
     manager.current_context().widget_data.clear()
 
 
@@ -283,17 +285,19 @@ async def save_edit(call: types.CallbackQuery, _button: Button, manager: DialogM
             text=ad.post()
         )
 
-    if edit != "photos" and post_ad.related_messages:
-        await call.bot.edit_message_caption(
-            chat_id=config.tg_bot.private_group_id,
-            message_id=post_ad.admin_group_message_id,
-            caption=ad.post(where="admin_group")
-        )
-    elif edit != "photos":
+    # if edit != "photos" and post_ad.related_messages:
+    #     await call.bot.edit_message_caption(
+    #         chat_id=config.tg_bot.private_group_id,
+    #         message_id=post_ad.admin_group_message_id,
+    #         caption=ad.post(where="admin_group")
+    #     )
+    if edit != "photos":
         await call.bot.edit_message_text(
             chat_id=config.tg_bot.private_group_id,
             message_id=post_ad.admin_group_message_id,
-            text=ad.post(where="admin_group")
+            text=ad.post(where="admin_group"),
+            reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id,
+                                     full_name=call.from_user.full_name, url=ad.post_link)
         )
 
     await session.commit()

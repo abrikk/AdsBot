@@ -24,7 +24,7 @@ def setup_scheduler(bot: Bot = None, config: Config = None, storage: RedisStorag
     }
 
     scheduler = ContextSchedulerDecorator(
-        AsyncIOScheduler(jobstores=job_stores, timezone=str(get_localzone()))
+        AsyncIOScheduler(jobstores=job_stores, timezone='Europe/Kiev')
     )
     if not bot:
         bot = Bot(config.tg_bot.token)

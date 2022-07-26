@@ -9,7 +9,7 @@ from aiogram.utils.markdown import hcode
 from aiogram_dialog import DialogManager, Dialog, Window, StartMode
 from aiogram_dialog.widgets.input import TextInput
 from aiogram_dialog.widgets.kbd import Start, Radio, Checkbox, Button, Group, Counter, ManagedCounterAdapter, \
-    ManagedCheckboxAdapter, Row, Next
+    ManagedCheckboxAdapter, Row, Next, SwitchTo
 from aiogram_dialog.widgets.text import Const, Format
 from aiogram_dialog.widgets.when import Whenable
 from apscheduler.jobstores.base import JobLookupError
@@ -17,8 +17,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from tgbot.config import Config
 from tgbot.constants import OWNER, ADMIN, USER, BANNED
-from tgbot.filters.inline_filter import InlineFilter
-from tgbot.filters.is_user import IsUser
+from tgbot.filters.inline_user_filter import InlineUserFilter
 from tgbot.filters.manage_filter import ManageUser
 from tgbot.handlers.create_ad.form import when_not, get_user_mention
 from tgbot.misc.states import Main, ShowUser
@@ -226,6 +225,8 @@ async def remove_restrictions(call: types.CallbackQuery, _button: Button, manage
     user: User = await session.get(User, user_id)
     if user.restricted_till:
         user.restricted_till = None
+        manager.current_context().widget_data.pop("user_restrict_options")
+        manager.current_context().widget_data["restrict"] = False
         await session.commit()
         await call.answer("Ограничения удалены")
     else:
@@ -256,42 +257,69 @@ async def restrict_user(call: types.CallbackQuery, _widget: Any, manager: Dialog
 
 
 async def change_post_limit_value(_call: types.CallbackQuery, widget: ManagedCounterAdapter, manager: DialogManager):
-    print("u are wronff")
     user_id: int = manager.current_context().start_data.get("user_id")
     session = manager.data.get("session")
     db: DBCommands = manager.data.get("db_commands")
     user: User = await session.get(User, user_id)
-    user.post_limit = int(widget.get_value())
-    post_limit: int = await db.get_value_of_restriction("post")
+    widget_id: str = widget.widget.widget_id
+    value: int = int(widget.get_value())
 
-    if user.post_limit == post_limit:
-        user.post_limit = None
-    checked: bool = True if (not user.post_limit) or user.post_limit == post_limit else False
-    await manager.dialog().find('default_post_limit').set_checked(event="", checked=checked)
+    if widget_id == "post_limit_counter":
+        user.post_limit = value
+        post_limit: int = await db.get_value_of_restriction("post")
+
+        if user.post_limit == post_limit:
+            user.post_limit = None
+
+        checked_limit: bool = True if not user.post_limit else False
+        await manager.dialog().find('default_post_limit').set_checked(event="", checked=checked_limit)
+    else:
+        user.max_active = value
+        max_active: int = await db.get_value_of_restriction("max_active")
+
+        if user.max_active == max_active:
+            user.max_active = None
+
+        checked_limit: bool = True if not user.max_active else False
+        await manager.dialog().find('default_max_active_post').set_checked(event="", checked=checked_limit)
     await session.commit()
 
 
 async def set_default_limit(_call: types.CallbackQuery, widget: ManagedCheckboxAdapter, manager: DialogManager):
-    print("YOU ARE COMPLETELY WRONG")
     user_id: int = manager.current_context().start_data.get("user_id")
     session = manager.data.get("session")
     db: DBCommands = manager.data.get("db_commands")
     user: User = await session.get(User, user_id)
-    widget_id = widget.widget.widget_id
-    print(widget_id)
+    widget_id: str = widget.widget.widget_id
+
     if widget_id == "default_post_limit":
         global_post_limit: int = await db.get_value_of_restriction(uid="post")
         user.post_limit = None
         await manager.dialog().find('post_limit_counter').set_value(value=global_post_limit)
         manager.current_context().widget_data["post_limit"] = False
+        await manager.dialog().find('default_post_limit').set_checked(event="", checked=True)
     else:
         global_max_active: int = await db.get_value_of_restriction(uid="max_active")
         user.max_active = None
-        await manager.dialog().find('post_limit_counter').set_value(value=global_max_active)
-        manager.current_context().widget_data["max_active_post"] = False
+        await manager.dialog().find('max_active_post').set_value(value=global_max_active)
+        manager.current_context().widget_data["max_active"] = False
+        await manager.dialog().find('default_max_active_post').set_checked(event="", checked=True)
 
     await session.commit()
 
+
+async def set_tick_if_default(_call: types.CallbackQuery, widget: ManagedCheckboxAdapter, manager: DialogManager):
+    user_id: int = manager.current_context().start_data.get("user_id")
+    widget_id = widget.widget.widget_id
+    session = manager.data.get("session")
+    user: User = await session.get(User, user_id)
+
+    if widget_id == "post_limit":
+        if not user.post_limit:
+            await manager.dialog().find('default_post_limit').set_checked(event="", checked=True)
+    else:
+        if not user.max_active:
+            await manager.dialog().find('default_max_active_post').set_checked(event="", checked=True)
 
 show_user_dialog = Dialog(
     Window(
@@ -315,17 +343,19 @@ show_user_dialog = Dialog(
             when=show_restrict,
             on_click=restrict_user
         ),
+
         Checkbox(
             checked_text=Const("🔘 Изменить лимит постов в день"),
             unchecked_text=Const("⚪️ Изменить лимит постов в день"),
-            id="post_limit"
+            id="post_limit",
+            on_click=set_tick_if_default
         ),
         Group(
             Counter(
                 id="post_limit_counter",
                 text=Format("{value}"),
                 min_value=1,
-                on_click=change_post_limit_value
+                on_value_changed=change_post_limit_value
             ),
             Checkbox(
                 checked_text=Const("✔️ По умолчанию"),
@@ -335,17 +365,19 @@ show_user_dialog = Dialog(
             ),
             when=show_post_limit
         ),
+
         Checkbox(
             checked_text=Const("🔘 Изменить лимит активных постов"),
             unchecked_text=Const("⚪️ Изменить лимит активных постов"),
-            id="max_active"
+            id="max_active",
+            on_click=set_tick_if_default
         ),
         Group(
             Counter(
                 id="max_active_post",
                 text=Format("{value}"),
                 min_value=1,
-                on_click=change_post_limit_value
+                on_value_changed=change_post_limit_value
             ),
             Checkbox(
                 checked_text=Const("✔️ По умолчанию"),
@@ -355,6 +387,7 @@ show_user_dialog = Dialog(
             ),
             when=show_max_active_post
         ),
+
         Group(
             Radio(
                 checked_text=Format("✅️ {item[0]}"),
@@ -372,7 +405,8 @@ show_user_dialog = Dialog(
             state=Main.main,
             mode=StartMode.RESET_STACK
         ),
-        state=ShowUser.true
+        state=ShowUser.true,
+        preview_add_transitions=[Next()]
     ),
 
     Window(
@@ -424,16 +458,15 @@ show_user_dialog = Dialog(
             on_click=change_user_role,
             when="ban_reason"
         ),
-        TextInput(
-            id="ban_reason"
-        ),
+        TextInput(id="ban_reason"),
         state=ShowUser.reason,
-        getter=[get_conditions, get_input_reason]
+        getter=[get_conditions, get_input_reason],
+        preview_add_transitions=[SwitchTo(Const(""), "hint", ShowUser.true)]
     ),
     on_start=set_default_data,
-    getter=get_show_user_text
+    getter=get_show_user_text,
 )
 
 
-def register_show_product(dp: Dispatcher):
-    dp.register_message_handler(start_show_user_dialog, ManageUser() | (InlineFilter() and IsUser()))
+def register_show_user(dp: Dispatcher):
+    dp.register_message_handler(start_show_user_dialog, ManageUser() | InlineUserFilter())

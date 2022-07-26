@@ -25,7 +25,7 @@ async def ask_if_active(user_id: int, post_id: int, channel_username: str, chann
 
     scheduler.add_job(
         check_if_active,
-        trigger=DateTrigger(datetime.datetime.now() + datetime.timedelta(seconds=10)),
+        trigger=DateTrigger(datetime.datetime.now() + datetime.timedelta(hours=1), timezone='Europe/Kiev'),
         kwargs=dict(user_id=user_id, post_id=post_id, channel_id=channel_id, private_group_id=private_group_id,
                     ask_message_id=ask_message.message_id),
         id=f"check_{post_id}"

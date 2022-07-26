@@ -5,7 +5,7 @@ from tgbot.handlers.admin.admin_panel import admin_dialog
 from tgbot.handlers.admin.edit_restrictions import edit_restrictions_dialog
 from tgbot.handlers.admin.edit_tags import edit_tags_dialog
 from tgbot.handlers.admin.manage_ads import register_manage_post_ad
-from tgbot.handlers.admin.show_user import show_user_dialog, register_show_product
+from tgbot.handlers.admin.show_user import show_user_dialog, register_show_user
 from tgbot.handlers.cancel import register_cancel
 from tgbot.handlers.create_ad.dialogs import form_dialog, confirm_dialog
 from tgbot.handlers.edit_ad.show_my_ad import show_my_ad_dialog
@@ -39,8 +39,8 @@ def register_all_handlers(dp: Dispatcher):
 
     register_cancel(dp)
     register_post_reaction(dp)
-    register_show_product(dp)
     register_manage_post_ad(dp)
+    register_show_user(dp)
     register_start(dp)
     register_test(dp)
     register_ad_status_handler(dp)

@@ -17,7 +17,7 @@ async def manage_post_ad(call: types.CallbackQuery, callback_data: dict):
     post_id: str = callback_data.get("post_id")
     user_id: str = callback_data.get("user_id")
     full_name: str = callback_data.get("full_name")
-    print(post_id, user_id, full_name)
+
     await call.message.edit_text(
         text=call.message.text + "\n\n ⚠️ Вы уверены что хотите удалить это объявление?",
         reply_markup=confirm_delete_ad(post_id, user_id, full_name)

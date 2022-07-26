@@ -9,7 +9,7 @@ from aiogram_dialog.widgets.text import Const, Format
 
 from tgbot.handlers.create_ad.form import change_stage, set_default, get_currency_data, contact_exist, \
     pic_exist, fixed_size_1024, invalid_input, pic_validator, price_validator, currency_selected, delete_contact, \
-    contact_validator, request_confirmation, delete_pic, on_back, change_photo
+    contact_validator, request_confirmation, delete_pic, on_back, change_photo, switch_to_description
 from tgbot.handlers.create_ad.getters import get_form_text, get_tag_categories, \
     get_tag_names, get_stages, get_show_next, get_can_post, get_confirm_text, on_confirm
 from tgbot.misc.media_widget import DynamicMediaFileId
@@ -38,7 +38,8 @@ def get_widgets() -> tuple:
             SwitchTo(
                 text=Const("⬅️ Назад"),
                 id="to_previous",
-                state=Form.tag
+                state=Form.tag,
+                on_click=switch_to_description
             )
         ),
         Button(
@@ -125,6 +126,8 @@ form_dialog = Dialog(
             on_success=change_stage
         ),
         state=Form.description,
+        preview_add_transitions=[Back(), Next(), SwitchTo(Const(""), "hint", Form.price),
+                                 SwitchTo(Const(""), "hint", Form.contact)]
     ),
 
     Window(
@@ -139,7 +142,9 @@ form_dialog = Dialog(
             pic_validator,
             content_types=[types.ContentType.ANY]
         ),
-        state=Form.photo
+        state=Form.photo,
+        preview_add_transitions=[Back(), Next(), SwitchTo(Const(""), "hint", Form.contact),
+                                 SwitchTo(Const(""), "hint", Form.tag)]
     ),
 
     Window(
@@ -164,7 +169,9 @@ form_dialog = Dialog(
             content_types=types.ContentType.TEXT
         ),
         state=Form.price,
-        getter=[get_currency_data]
+        getter=get_currency_data,
+        preview_add_transitions=[Back(), Next(), SwitchTo(Const(""), "hint", Form.description),
+                                 SwitchTo(Const(""), "hint", Form.tag)]
     ),
 
     Window(
@@ -179,13 +186,13 @@ form_dialog = Dialog(
             func=contact_validator,
             content_types=types.ContentType.TEXT
         ),
-        state=Form.contact
+        state=Form.contact,
+        preview_add_transitions=[Back(), SwitchTo(Const(""), "hint", Form.description),
+                                 SwitchTo(Const(""), "hint", Form.price), SwitchTo(Const(""), "hint", Form.tag)]
     ),
-
     on_start=set_default,
     getter=[get_stages, get_show_next, get_can_post, get_form_text]
 )
-
 
 confirm_dialog = Dialog(
     Window(
@@ -217,6 +224,9 @@ confirm_dialog = Dialog(
                 mode=StartMode.RESET_STACK),
         ),
         state=ConfirmAd.confirm,
-        getter=[get_confirm_text]
+        getter=get_confirm_text,
+        preview_add_transitions=[Start(Const(""), "hint", Main.main), Start(Const(""), "hint", Form.description),
+                                 Start(Const(""), "hint", Form.photo), Start(Const(""), "hint", Form.price),
+                                 Start(Const(""), "hint", Form.contact)]
     )
 )

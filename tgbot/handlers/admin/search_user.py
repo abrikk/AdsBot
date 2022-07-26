@@ -60,7 +60,8 @@ async def search_user(query: types.InlineQuery, db_commands):
             types.InlineQueryResultArticle(
                 id=str(user.user_id),
                 title=quote_html("Пользователь: " + user.first_name + (user.last_name and " " + user.last_name or "")),
-                description="Дата регистрации: {date}".format(date=user.created_at.strftime('%d.%m.%Y %H:%M:%S')),
+                description="Дата регистрации: {date}\n"
+                            "Статус: {status}".format(date=user.created_at.strftime('%d.%m.%Y %H:%M:%S'), status=user.role),
                 input_message_content=types.InputTextMessageContent(
                     message_text="{name}: {id}".format(
                         name=quote_html(user.first_name),

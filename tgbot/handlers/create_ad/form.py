@@ -130,9 +130,10 @@ async def delete_pic(_call: types.CallbackQuery, _button: Button, manager: Dialo
 
 async def price_validator(message: types.Message, dialog: ManagedDialogAdapterProto, manager: DialogManager):
     try:
-        price: float = (float(message.text).is_integer() and int(message.text)) or round(float(message.text), 2)
+        text = message.text.replace(" ", "")
+        price: float = (float(text).is_integer() and int(text)) or round(float(text), 2)
 
-        if not (price > 0.01):
+        if not (1 <= price <= 999_999_999):
             raise ValueError
 
         manager.current_context().widget_data["price"] = price
@@ -140,7 +141,8 @@ async def price_validator(message: types.Message, dialog: ManagedDialogAdapterPr
         await manager.dialog().find('stage').set_checked(event="", item_id="contact")
     except ValueError:
         manager.show_mode = ShowMode.EDIT
-        await message.answer("Цена должна быть числом и быть больше 0.01. Попробуйте еще раз.")
+        await message.answer("Цена должна быть числом и быть в промежутке от <code>1</code> до "
+                             "<code>999999999</code>. Попробуйте еще раз.")
 
 
 async def currency_selected(_call: types.CallbackQuery, _widget: Any, manager: DialogManager, item_id: str):
@@ -185,6 +187,10 @@ async def on_back(_call: types.CallbackQuery, _button: Button, manager: DialogMa
         start_data.pop(item, None)
 
     await manager.done(start_data)
+
+
+async def switch_to_description(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
+    await manager.dialog().find('stage').set_checked(event="", item_id="description")
 
 
 async def change_photo(_call: types.CallbackQuery, button: Button, manager: DialogManager):

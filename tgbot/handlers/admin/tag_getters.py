@@ -1,14 +1,16 @@
 from aiogram import types
 from aiogram.utils.markdown import hcode, hbold
-from aiogram_dialog import DialogManager
+from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.manager.protocols import ManagedDialogAdapterProto
 from aiogram_dialog.widgets.input import TextInput
 from aiogram_dialog.widgets.input.text import T
 from aiogram_dialog.widgets.kbd import Button
+from sqlalchemy.exc import IntegrityError
 
 from tgbot.misc.states import ManageTags
 from tgbot.models.tag_category import TagCategory
 from tgbot.models.tags_name import TagName
+from tgbot.models.user import User
 from tgbot.services.db_commands import DBCommands
 
 
@@ -79,7 +81,7 @@ async def get_tags_text(dialog_manager: DialogManager, **_kwargs):
     else:
         text += f"⚠️ Эта категория не активна. Чтобы активировать ее добавьте в нее хотя бы один тег."
 
-    return {"tag_text": text}
+    return {"tag_text": text, "show_delete_tags": len(tag_names) > 0}
 
 
 async def get_add_del_tags_text(dialog_manager: DialogManager, **_kwargs):
@@ -121,7 +123,7 @@ async def get_confirm_categories_text(dialog_manager: DialogManager, **_kwargs):
     categories: list[TagCategory] = [await session.get(TagCategory, id) for id in categories_id]
 
     text = (f"Вы уверены, что хотите удалить следующие категории тегов?"
-            f"Категории которые будут удалены: {', '.join(map(hbold, categories))}")
+            f"Категории которые будут удалены: {', '.join(map(hbold, [category.category for category in categories]))}")
 
     return {"confirm_categories_text": text}
 
@@ -129,34 +131,43 @@ async def get_confirm_categories_text(dialog_manager: DialogManager, **_kwargs):
 async def add_category(message: types.Message, _widget: TextInput, manager: DialogManager,
                        category: T):
     session = manager.data.get("session")
-    category: TagCategory = TagCategory(category=category)
-    session.add(category)
-    await session.commit()
-    await message.answer("Категория тегов добавлена.")
-    manager.current_context().widget_data.pop("category")
-    await manager.switch_to(ManageTags.main)
+    try:
+        category: TagCategory = TagCategory(category=category)
+        session.add(category)
+        await session.commit()
+        await message.answer("Категория тегов добавлена.")
+        manager.current_context().widget_data.clear()
+        await manager.switch_to(ManageTags.main)
+    except IntegrityError:
+        await session.rollback()
+        manager.show_mode = ShowMode.EDIT
+        await message.answer("Категория тегов с таким названием уже существует.")
 
 
 async def confirm_tags(call: types.CallbackQuery, _button: Button, manager: DialogManager):
     widget_data = manager.current_context().widget_data
-    print(widget_data)
+
     session = manager.data.get("session")
     action: str = widget_data.get("action")
     tags: list = widget_data.get("tags")
     category = widget_data.get("category")
 
     if action == "add":
-        tags_obj: list[TagName] = [
-            TagName(
-                category=category,
-                name=tag
-            ) for tag in tags
-        ]
-        session.add_all(
-            (
-                *tags_obj,
-             )
-        )
+        try:
+            tags_obj: list[TagName] = [
+                TagName(
+                    category=category,
+                    name=tag
+                ) for tag in tags
+            ]
+            session.add_all(
+                (
+                    *tags_obj,
+                 )
+            )
+        except IntegrityError:
+            await session.rollback()
+
     else:
         tags_id: list[int] = widget_data.get("tags_id")
         for tag_id in tags_id:
@@ -181,27 +192,36 @@ async def delete_chosen_categories(call: types.CallbackQuery, _button: Button, m
     for category in categories:
         await session.delete(category)
     await session.commit()
+    widget_data.clear()
     await call.message.answer("Категории тегов были успешно удалены.")
     await manager.switch_to(ManageTags.main)
 
 
 async def validate_tags(message: types.Message, dialog: ManagedDialogAdapterProto, manager: DialogManager):
     widget_data = manager.current_context().widget_data
-    tags: list = list(map(lambda t: t.capitalize(), message.text.split()))
+    tags: list = list(set(map(lambda t: t.replace(",", "").capitalize(), message.text.split())))
+    print(tags)
     action: str = widget_data.get("action")
     if action == "del":
         category: str = widget_data.get("category")
         db: DBCommands = manager.data.get("db_commands")
         for tag in tags:
             tag_id = await db.get_tags_by_category_and_name(category, tag)
+            print("id tag by categoru and  name:", tag_id)
             if not tag_id:
+                print("no tag", tags)
                 tags.remove(tag)
-            tags_id = widget_data.setdefault("tags_id", [])
+                continue
+            print("what it gives", widget_data.setdefault("tags_id", []))
+            tags_id: list[int] = widget_data.setdefault("tags_id", [])
             tags_id.append(tag_id)
-
+        if not tags:
+            return
+    print("FINALLY", tags)
     widget_data["tags"] = tags
     await dialog.switch_to(ManageTags.confirm_tags)
 
 
 def validate_category(category: str):
-    return category.capitalize()
+    return "_".join(category.split()).capitalize()
+    # return category.strip().capitalize()

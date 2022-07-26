@@ -20,7 +20,7 @@ async def get_restriction_text(dialog_manager: DialogManager, **_kwargs):
             f"Максимальное количество контактов в объявлении: <code>{values[0]}</code>\n"
             f"Максимальное количество картинок в объявлении: <code>{values[1]}</code>\n"
             f"Максимальное количество постов в день: <code>{values[2]}</code>\n"
-            f"Максимальное количество активных объявлений: <code>{values[2]}</code>\n")
+            f"Максимальное количество активных объявлений: <code>{values[3]}</code>\n")
 
     return {"restriction_text": text}
 
@@ -50,10 +50,12 @@ async def set_default_restrict_data(_, dialog_manager: DialogManager):
     contact_widget = widget_adtapter.find_for_item("c", "contact")
     pic_widget = widget_adtapter.find_for_item("c", "pic")
     post_widget = widget_adtapter.find_for_item("c", "post")
+    max_active_widget = widget_adtapter.find_for_item("c", "max_active")
 
     await contact_widget.set_value(value=restrictions[0].number)
     await pic_widget.set_value(value=restrictions[1].number)
     await post_widget.set_value(value=restrictions[2].number)
+    await max_active_widget.set_value(value=restrictions[3].number)
 
 
 edit_restrictions_dialog = Dialog(
