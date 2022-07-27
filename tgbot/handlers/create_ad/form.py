@@ -131,7 +131,7 @@ async def delete_pic(_call: types.CallbackQuery, _button: Button, manager: Dialo
 async def price_validator(message: types.Message, dialog: ManagedDialogAdapterProto, manager: DialogManager):
     try:
         text = message.text.replace(" ", "")
-        price: int = int(text)
+        price: int = int(float(text))
 
         if not (1 <= price <= 999_999_999):
             raise ValueError

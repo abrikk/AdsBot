@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 
+import pytz
 from aiogram.utils.markdown import hitalic, hcode
 
 
@@ -28,8 +29,8 @@ class Ad:
     post_limit: int = field(default=0)
 
     post_link: str = ""
-    updated_at: datetime = field(default=datetime.today())
-    created_at: datetime = field(default=datetime.today())
+    updated_at: datetime = field(default=datetime.now(tz=pytz.timezone("Europe/Kiev")))
+    created_at: datetime = field(default=datetime.now(tz=pytz.timezone("Europe/Kiev")))
 
     def to_text(self, where: str = None) -> str:
         description: str = self.description or '➖'
@@ -199,8 +200,8 @@ class Ad:
         return " ".join([heading, category, tag])
 
     def make_datetime_text(self) -> str:
-        return f"Дата создания объявления: <code>{self.created_at.strftime('%d.%m.%Y %H:%M:%S')}</code>\n" \
-               f"Последнее обновление: <code>{self.updated_at.strftime('%d.%m.%Y %H:%M:%S')}</code>"
+        return f"Дата создания объявления: <code>{self.created_at.astimezone(pytz.timezone('Europe/Kiev')).strftime('%d.%m.%Y %H:%M:%S')}</code>\n" \
+               f"Последнее обновление: <code>{self.updated_at.astimezone(pytz.timezone('Europe/Kiev')).strftime('%d.%m.%Y %H:%M:%S')}</code>"
 
     @property
     def currency(self):

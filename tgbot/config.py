@@ -23,13 +23,13 @@ class RedisConfig:
 class TgBot:
     token: str
     admin_ids: list[int]
-    channel_id: int
-    private_group_id: int
 
 
 @dataclass
-class Miscellaneous:
-    other_params: str = None
+class Chats:
+    main_channel_id: int
+    private_group_id: int
+    errors_channel_id: int
 
 
 @dataclass
@@ -37,7 +37,7 @@ class Config:
     tg_bot: TgBot
     db: DbConfig
     redis_config: RedisConfig
-    misc: Miscellaneous
+    chats: Chats
 
 
 def load_config(path: str = None):
@@ -47,9 +47,7 @@ def load_config(path: str = None):
     return Config(
         tg_bot=TgBot(
             token=env.str("BOT_TOKEN"),
-            admin_ids=list(map(int, env.list("ADMINS"))),
-            channel_id=env.int("CHANNEL_ID"),
-            private_group_id=env.int("PRIVATE_GROUP_ID")
+            admin_ids=list(map(int, env.list("ADMINS")))
         ),
         db=DbConfig(
             user=env.str('DB_USER'),
@@ -63,5 +61,9 @@ def load_config(path: str = None):
             port=env.int('REDIS_PORT'),
             db=env.int('REDIS_DB'),
         ),
-        misc=Miscellaneous()
+        chats=Chats(
+            main_channel_id=env.int('MAIN_CHANNEL_ID'),
+            private_group_id=env.int('PRIVATE_GROUP_ID'),
+            errors_channel_id=env.int('ERRORS_CHANNEL_ID')
+        )
     )

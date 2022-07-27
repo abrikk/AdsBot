@@ -13,6 +13,7 @@ from schedulers.base import setup_scheduler
 from schedulers.jobs import reset_for_all_users
 from setup import register_all_dialogs, register_all_handlers
 from tgbot.config import load_config, Config
+from tgbot.constants import TIMEZONE
 from tgbot.filters.admin import AdminFilter
 from tgbot.middlewares.config import ConfigMiddleware
 from tgbot.middlewares.db import DbSessionMiddleware
@@ -54,8 +55,7 @@ async def main():
 
     scheduler.add_job(
         reset_for_all_users,
-        trigger=CronTrigger(hour=0, minute=0, second=0, jitter=300, timezone='Europe/Kiev'),
-        # trigger=CronTrigger(minute="*", second=0),
+        trigger=CronTrigger(hour=0, minute=0, second=0, jitter=300, timezone=TIMEZONE),
         id="reset_posted_today",
         replace_existing=True
     )

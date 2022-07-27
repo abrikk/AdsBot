@@ -3,6 +3,7 @@ import logging
 from aiogram import types, Dispatcher
 from aiogram.types import MediaGroup
 from aiogram.utils.exceptions import MessageToDeleteNotFound
+from aiogram.utils.markdown import hstrikethrough
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from schedulers.functions import create_jobs
@@ -23,18 +24,28 @@ async def update_ad(call: types.CallbackQuery, callback_data: dict,
 
     action = callback_data.get('action')
     post_ad: PostAd = await session.get(PostAd, post_id)
-    channel = await call.bot.get_chat(config.tg_bot.channel_id)
+
+    if post_ad is None:
+        await bot.edit_message_text(
+            text=hstrikethrough(call.message.text) + "\n\nОбъявление было удалено!⚠️",
+            chat_id=call.from_user.id,
+            message_id=call.message.message_id,
+            reply_markup=None
+        )
+        return
+
+    channel = await call.bot.get_chat(config.chats.main_channel_id)
 
     try:
         if post_ad.related_messages:
             for message in post_ad.related_messages:
                 await bot.delete_message(
-                    chat_id=config.tg_bot.channel_id,
+                    chat_id=config.chats.main_channel_id,
                     message_id=message.message_id
                 )
         else:
             await bot.delete_message(
-                chat_id=config.tg_bot.channel_id,
+                chat_id=config.chats.main_channel_id,
                 message_id=post_ad.post_id
             )
     except MessageToDeleteNotFound:
@@ -55,7 +66,7 @@ async def update_ad(call: types.CallbackQuery, callback_data: dict,
             text=f"#НеАктуальноеОбъявление\n\n"
                  f"Объявление пользователя c идентификатором <code>{call.from_user.id}</code> было удалено с канала, "
                  f"так как пользователь посчитал что оно больше не актуально 📛",
-            chat_id=config.tg_bot.private_group_id,
+            chat_id=config.chats.private_group_id,
             message_id=post_ad.admin_group_message_id,
             reply_markup=manage_post(call.from_user.id, call.from_user.full_name, argument="only_search_user")
         )
@@ -90,20 +101,20 @@ async def update_ad(call: types.CallbackQuery, callback_data: dict,
             )
 
             sent_post = await bot.send_media_group(
-                chat_id=config.tg_bot.channel_id,
+                chat_id=config.chats.main_channel_id,
                 media=album
             )
 
         elif ad.photos:
             sent_post = await bot.send_photo(
-                chat_id=config.tg_bot.channel_id,
+                chat_id=config.chats.main_channel_id,
                 photo=list(ad.photos.values())[0],
                 caption=ad.post()
             )
 
         else:
             sent_post = await bot.send_message(
-                chat_id=config.tg_bot.channel_id,
+                chat_id=config.chats.main_channel_id,
                 text=ad.post()
             )
 
@@ -139,14 +150,14 @@ async def update_ad(call: types.CallbackQuery, callback_data: dict,
         ad.post_link = make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id)
 
         await bot.edit_message_text(
-            chat_id=config.tg_bot.private_group_id,
+            chat_id=config.chats.private_group_id,
             message_id=post_ad.admin_group_message_id,
             text=ad.post(where="admin_group"),
             reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id, full_name=call.from_user.full_name)
         )
 
-        channel = await call.bot.get_chat(config.tg_bot.channel_id)
-        create_jobs(scheduler, call.from_user.id, post_ad.post_id, channel.id, config.tg_bot.private_group_id,
+        channel = await call.bot.get_chat(config.chats.main_channel_id)
+        create_jobs(scheduler, call.from_user.id, post_ad.post_id, channel.id, config.chats.private_group_id,
                     channel.username)
 
     await session.commit()

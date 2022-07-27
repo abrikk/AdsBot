@@ -176,20 +176,20 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
         )
 
         sent_post = await bot.send_media_group(
-            chat_id=config.tg_bot.channel_id,
+            chat_id=config.chats.main_channel_id,
             media=album
         )
 
     elif ad.photos:
         sent_post = await bot.send_photo(
-            chat_id=config.tg_bot.channel_id,
+            chat_id=config.chats.main_channel_id,
             photo=list(ad.photos.values())[0],
             caption=ad.post()
         )
 
     else:
         sent_post = await bot.send_message(
-            chat_id=config.tg_bot.channel_id,
+            chat_id=config.chats.main_channel_id,
             text=ad.post()
         )
 
@@ -233,12 +233,12 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
 
     session.add(post_ad)
 
-    channel = await call.bot.get_chat(config.tg_bot.channel_id)
+    channel = await call.bot.get_chat(config.chats.main_channel_id)
     ad.post_link = make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id)
-    create_jobs(scheduler, call.from_user.id, post_ad.post_id, channel.id, config.tg_bot.private_group_id, channel.username)
+    create_jobs(scheduler, call.from_user.id, post_ad.post_id, channel.id, config.chats.private_group_id, channel.username)
 
     admin_group = await bot.send_message(
-        chat_id=config.tg_bot.private_group_id,
+        chat_id=config.chats.private_group_id,
         text=ad.post(where="admin_group"),
         reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id,
                                  full_name=call.from_user.full_name, url=ad.post_link)

@@ -125,12 +125,12 @@ async def delete_post_ad(call: types.CallbackQuery, _button: Button, manager: Di
         if post_ad.related_messages:
             for message in post_ad.related_messages:
                 await call.bot.delete_message(
-                    chat_id=config.tg_bot.channel_id,
+                    chat_id=config.chats.main_channel_id,
                     message_id=message.message_id
                 )
         else:
             await call.bot.delete_message(
-                chat_id=config.tg_bot.channel_id,
+                chat_id=config.chats.main_channel_id,
                 message_id=post_ad.post_id
             )
     except MessageToDeleteNotFound:
@@ -148,7 +148,7 @@ async def delete_post_ad(call: types.CallbackQuery, _button: Button, manager: Di
     await call.bot.edit_message_text(
         text=f"#УдаленоПользователем \n\n"
              f"Пользователь {call.from_user.get_mention()} удалил своё объявление ❕",
-        chat_id=config.tg_bot.private_group_id,
+        chat_id=config.chats.private_group_id,
         message_id=post_ad.admin_group_message_id,
         reply_markup=manage_post(call.from_user.id, call.from_user.full_name, argument="only_search_user")
     )
@@ -183,7 +183,7 @@ async def save_edit(call: types.CallbackQuery, _button: Button, manager: DialogM
     edit: str = widget_data.get("edit")
     session = manager.data.get("session")
     config: Config = manager.data.get("config")
-    channel = await obj.bot.get_chat(config.tg_bot.channel_id)
+    channel = await obj.bot.get_chat(config.chats.main_channel_id)
     post_id = manager.current_context().start_data.get("post_id")
 
     post_ad: PostAd = await session.get(PostAd, post_id)
@@ -210,7 +210,7 @@ async def save_edit(call: types.CallbackQuery, _button: Button, manager: DialogM
         if message_ids_to_delete:
             for id in message_ids_to_delete:
                 await call.bot.delete_message(
-                    chat_id=config.tg_bot.channel_id,
+                    chat_id=config.chats.main_channel_id,
                     message_id=id
                 )
 
@@ -246,12 +246,12 @@ async def save_edit(call: types.CallbackQuery, _button: Button, manager: DialogM
             if new_message.photo_file_unique_id not in current_photos_unique_ids:
                 await call.bot.edit_message_media(
                     media=InputMedia(media=new_message.photo_file_id),
-                    chat_id=config.tg_bot.channel_id,
+                    chat_id=config.chats.main_channel_id,
                     message_id=new_message.message_id
                 )
                 if new_message.message_id == post_id:
                     await call.bot.edit_message_caption(
-                        chat_id=config.tg_bot.channel_id,
+                        chat_id=config.chats.main_channel_id,
                         message_id=new_message.message_id,
                         caption=ad.post()
                     )
@@ -259,30 +259,30 @@ async def save_edit(call: types.CallbackQuery, _button: Button, manager: DialogM
     elif edit == "photos" and post_ad.related_messages:
         await call.bot.edit_message_media(
             media=InputMedia(media=post_ad.related_messages[0].photo_file_id),
-            chat_id=config.tg_bot.channel_id,
+            chat_id=config.chats.main_channel_id,
             message_id=post_ad.post_id
         )
         await call.bot.edit_message_caption(
-            chat_id=config.tg_bot.channel_id,
+            chat_id=config.chats.main_channel_id,
             message_id=post_ad.post_id,
             caption=ad.post()
         )
     elif post_ad.related_messages:
         await call.bot.edit_message_caption(
-            chat_id=config.tg_bot.channel_id,
+            chat_id=config.chats.main_channel_id,
             message_id=post_ad.post_id,
             caption=ad.post()
         )
     else:
         await call.bot.edit_message_text(
-            chat_id=config.tg_bot.channel_id,
+            chat_id=config.chats.main_channel_id,
             message_id=post_ad.post_id,
             text=ad.post()
         )
 
     if edit != "photos":
         await call.bot.edit_message_text(
-            chat_id=config.tg_bot.private_group_id,
+            chat_id=config.chats.private_group_id,
             message_id=post_ad.admin_group_message_id,
             text=ad.post(where="admin_group"),
             reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id,

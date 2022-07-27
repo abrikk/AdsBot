@@ -4,6 +4,7 @@ from aiogram import types, Dispatcher
 from aiogram.utils.exceptions import MessageToDeleteNotFound
 from aiogram.utils.markdown import hstrikethrough
 from apscheduler.jobstores.base import JobLookupError
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from tgbot.config import Config
 from tgbot.handlers.create_ad.form import get_user_mention
@@ -36,7 +37,7 @@ async def delete_ad_confirmation(call: types.CallbackQuery, callback_data: dict,
             reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id, full_name=call.from_user.full_name)
         )
     else:
-        scheduler = call.bot.get("scheduler")
+        scheduler: AsyncIOScheduler = call.bot.get("scheduler")
         user_id: int = int(callback_data.get("user_id"))
         full_name: str = callback_data.get("full_name")
 
@@ -45,16 +46,16 @@ async def delete_ad_confirmation(call: types.CallbackQuery, callback_data: dict,
             if post_ad.related_messages:
                 for message in post_ad.related_messages:
                     await call.bot.delete_message(
-                        chat_id=config.tg_bot.channel_id,
+                        chat_id=config.chats.main_channel_id,
                         message_id=message.message_id
                     )
             else:
                 await call.bot.delete_message(
-                    chat_id=config.tg_bot.channel_id,
+                    chat_id=config.chats.main_channel_id,
                     message_id=post_ad.post_id
                 )
         except MessageToDeleteNotFound:
-            logging.warning("Message to delete not found")
+            logging.warning("Message to delete not found by administrator")
 
         try:
             scheduler.remove_job("ask_" + str(post_ad.post_id))

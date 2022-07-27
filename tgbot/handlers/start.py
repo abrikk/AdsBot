@@ -13,11 +13,12 @@ async def start_bot(message: types.Message, config: Config, session, dialog_mana
     user: User = await session.get(User, user_id)
 
     if not user:
-        role_in_channel = (await message.bot.get_chat_member(config.tg_bot.channel_id, user_id)).status
+        role_in_channel = (await message.bot.get_chat_member(config.chats.main_channel_id, user_id)).status
         if role_in_channel == 'creator':
             role = OWNER
         elif user_id in config.tg_bot.admin_ids or role_in_channel == 'administrator':
             role: str = ADMIN
+            role: str = OWNER
         elif role_in_channel == BANNED:
             role: str = BANNED
         else:
@@ -48,4 +49,3 @@ async def start_bot(message: types.Message, config: Config, session, dialog_mana
 
 def register_start(dp: Dispatcher):
     dp.register_message_handler(start_bot, CommandStart(), ChatTypeFilter(types.ChatType.PRIVATE))
-

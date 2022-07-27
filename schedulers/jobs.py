@@ -1,6 +1,7 @@
 import logging
 import datetime
 
+import pytz
 from aiogram import Bot
 from aiogram.utils.exceptions import MessageToDeleteNotFound
 from apscheduler.schedulers.base import BaseScheduler
@@ -8,6 +9,7 @@ from apscheduler.triggers.date import DateTrigger
 from sqlalchemy import update
 from sqlalchemy.orm import sessionmaker
 
+from tgbot.constants import TIMEZONE
 from tgbot.handlers.create_ad.form import make_link_to_post
 from tgbot.keyboards.inline import confirm_post, manage_post
 from tgbot.models.post_ad import PostAd
@@ -23,9 +25,10 @@ async def ask_if_active(user_id: int, post_id: int, channel_username: str, chann
         disable_web_page_preview=False
     )
 
+    time_to_check = datetime.datetime.now(tz=pytz.timezone(TIMEZONE)) + datetime.timedelta(hours=1)
     scheduler.add_job(
         check_if_active,
-        trigger=DateTrigger(datetime.datetime.now() + datetime.timedelta(hours=1), timezone='Europe/Kiev'),
+        trigger=DateTrigger(time_to_check, timezone=TIMEZONE),
         kwargs=dict(user_id=user_id, post_id=post_id, channel_id=channel_id, private_group_id=private_group_id,
                     ask_message_id=ask_message.message_id),
         id=f"check_{post_id}"

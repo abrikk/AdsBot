@@ -94,7 +94,7 @@ async def get_show_user_text(dialog_manager: DialogManager, **_kwargs) -> dict:
     if user.role == OWNER:
         available_roles.append(("Администратор", ADMIN))
 
-    if role := context.widget_data.get("user_role") != context.widget_data.get("default_role"):
+    if (role := context.widget_data.get("user_role")) != context.widget_data.get("default_role"):
         user_text = f"Вы уверены что хотите изменить роль пользователя на {role}?\n\n" + user_text
 
     restrict_options: list = [(i + 'д', i) for i in ('1', '3', '7', '14', '30')]
@@ -153,12 +153,12 @@ async def change_user_role(call: types.CallbackQuery, _widget: Any, manager: Dia
                 if post_ad.related_messages:
                     for message in post_ad.related_messages:
                         await call.bot.delete_message(
-                            chat_id=config.tg_bot.channel_id,
+                            chat_id=config.chats.main_channel_id,
                             message_id=message.message_id
                         )
                 else:
                     await call.bot.delete_message(
-                        chat_id=config.tg_bot.channel_id,
+                        chat_id=config.chats.main_channel_id,
                         message_id=post_ad.post_id
                     )
             except MessageToDeleteNotFound:
@@ -174,11 +174,11 @@ async def change_user_role(call: types.CallbackQuery, _widget: Any, manager: Dia
 
         else:
             await session.commit()
-            is_admin: bool = (await call.bot.get_chat_member(config.tg_bot.channel_id,
+            is_admin: bool = (await call.bot.get_chat_member(config.chats.main_channel_id,
                                                              call.from_user.id)).is_chat_admin()
             if not is_admin:
                 await call.bot.ban_chat_member(
-                    chat_id=config.tg_bot.channel_id,
+                    chat_id=config.chats.main_channel_id,
                     user_id=user_id
                 )
 
@@ -219,13 +219,15 @@ async def clear_input(_call: types.CallbackQuery, _button: Button, manager: Dial
 
 
 async def remove_restrictions(call: types.CallbackQuery, _button: Button, manager: DialogManager):
-    user_id: int = manager.current_context().start_data.get("user_id")
+    context = manager.current_context()
+    user_id: int = context.start_data.get("user_id")
     session = manager.data.get("session")
     user: User = await session.get(User, user_id)
     if user.restricted_till:
         user.restricted_till = None
-        manager.current_context().widget_data.pop("user_restrict_options")
-        manager.current_context().widget_data["restrict"] = False
+        if context.widget_data.get("user_restrict_options"):
+            context.widget_data.pop("user_restrict_options")
+        context.widget_data["restrict"] = False
         await session.commit()
         await call.answer("Ограничения удалены")
     else:
@@ -249,7 +251,8 @@ async def restrict_user(call: types.CallbackQuery, _widget: Any, manager: Dialog
     session = manager.data.get("session")
     user: User = await session.get(User, user_id)
 
-    user.restricted_till = datetime.today() + timedelta(days=int(days))
+    # user.restricted_till = datetime.today() + timedelta(days=int(days))
+    user.restricted_till = datetime.now() + timedelta(minutes=1)
     await session.commit()
     await call.answer("Пользователь ограничен на: " + days + " дней")
     manager.current_context().widget_data["restrict"] = False
@@ -320,6 +323,15 @@ async def set_tick_if_default(_call: types.CallbackQuery, widget: ManagedCheckbo
         if not user.max_active:
             await manager.dialog().find('default_max_active_post').set_checked(event="", checked=True)
 
+
+async def is_restricted(_call: types.CallbackQuery, _widget: ManagedCheckboxAdapter, manager: DialogManager):
+    widget_data = manager.current_context().widget_data
+    user_id: int = manager.current_context().start_data.get("user_id")
+    session = manager.data.get("session")
+    user: User = await session.get(User, user_id)
+    if not user.restricted_till and widget_data.get("user_restrict_options") is not None:
+        widget_data.pop("user_restrict_options")
+
 show_user_dialog = Dialog(
     Window(
         Format(text="{user_text}", when="user_text"),
@@ -331,7 +343,8 @@ show_user_dialog = Dialog(
         Checkbox(
             checked_text=Const("🔘 Ограничить"),
             unchecked_text=Const("⚪️ Ограничить"),
-            id="restrict"
+            id="restrict",
+            on_click=is_restricted
         ),
         Radio(
             Format("☑️ {item[0]}"),

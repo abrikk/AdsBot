@@ -15,7 +15,7 @@ async def get_show_my_ad_text(dialog_manager: DialogManager, **_kwargs):
     config: Config = dialog_manager.data.get("config")
     post_id = start_data.get("post_id")
     post_ad: PostAd = await session.get(PostAd, post_id)
-    channel = await obj.bot.get_chat(config.tg_bot.channel_id)
+    channel = await obj.bot.get_chat(config.chats.main_channel_id)
 
     ad: Ad = Ad(
         state_class=post_ad.post_type,
@@ -57,7 +57,7 @@ async def get_post_link(dialog_manager: DialogManager, **_kwargs):
     config: Config = dialog_manager.data.get("config")
     start_data = dialog_manager.current_context().start_data
     post_id = int(start_data.get("post_id"))
-    channel = await dialog_manager.event.bot.get_chat(config.tg_bot.channel_id)
+    channel = await dialog_manager.event.bot.get_chat(config.chats.main_channel_id)
     return {"post_link": make_link_to_post(channel_username=channel.username, post_id=post_id)}
 
 

@@ -1,11 +1,13 @@
 from typing import Dict
 
+import pytz
 from aiogram import types
 from aiogram_dialog import Dialog, Window, DialogManager
 from aiogram_dialog.widgets.kbd import Start, Group, Back, Button, Next
 from aiogram_dialog.widgets.text import Format, Const
 from aiogram_dialog.widgets.when import Whenable
 
+from tgbot.constants import TIMEZONE
 from tgbot.misc.states import Main, AdminPanel, MyAds, Form
 from tgbot.misc.switch_inline_query_current_chat import SwitchInlineQueryCurrentChat
 from tgbot.models.user import User
@@ -29,8 +31,8 @@ async def switch_to_make_ad(call: types.CallbackQuery, _button: Button, manager:
 
     if restricted_date := user.restricted_till:
         date_text = "Администраторы бота запретили Вам создавать объявления до {date}, " \
-                    "{time}".format(date=restricted_date.strftime("%d.%m.%Y"),
-                                    time=restricted_date.strftime("%H:%M"))
+                    "{time}".format(date=restricted_date.astimezone(pytz.timezone(TIMEZONE)).strftime("%d.%m.%Y"),
+                                    time=restricted_date.astimezone(pytz.timezone(TIMEZONE)).strftime("%H:%M:%S"))
         await call.answer(text=date_text, show_alert=True)
         return
 

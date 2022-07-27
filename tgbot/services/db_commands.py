@@ -1,4 +1,4 @@
-from sqlalchemy import select, or_, update, and_, func, Date, String
+from sqlalchemy import select, or_, update, and_, func, String
 
 from tgbot.models.post_ad import PostAd
 from tgbot.models.restriction import Restriction
@@ -87,27 +87,10 @@ class DBCommands:
         request = await self.session.execute(sql)
         return request.scalars().all()
 
-    async def get_restriction(self, uid: str):
-        sql = select(Restriction).where(Restriction.uid == uid)
-        request = await self.session.execute(sql)
-        return request.scalars().first()
-
     async def get_value_of_restriction(self, uid: str):
         sql = select(Restriction.number).where(Restriction.uid == uid)
         request = await self.session.execute(sql)
         return request.scalars().first()
-
-    async def get_posted_ad(self, post_id: int):
-        sql = select(PostAd).where(PostAd.post_id == post_id)
-        request = await self.session.execute(sql)
-        return request.scalars().first()
-
-    async def get_post_type(self, post_id: int):
-        sql = select(PostAd.post_type).where(PostAd.post_id == post_id)
-        request = await self.session.execute(sql)
-        return request.scalars().first()
-
-    # _--------------------------------------------------_
 
     async def get_tag_categories(self) -> list[TagCategory]:
         sql = select(TagCategory.id, TagCategory.category).where(
@@ -179,16 +162,6 @@ class DBCommands:
         request = await self.session.execute(sql)
         return request.scalars().all()
 
-    # async def get_user_used_limit(self, user_id: int):
-    #     sql = select(func.count("*")).select_from(PostAd).where(
-    #         and_(
-    #             PostAd.user_id == user_id,
-    #             PostAd.created_at.cast(Date) == func.now().cast(Date)
-    #         )
-    #     )
-    #     request = await self.session.execute(sql)
-    #     return request.first()
-
     async def get_post_limit(self):
         sql = select(Restriction.number).where(Restriction.uid == 'post')
         request = await self.session.execute(sql)
@@ -200,4 +173,3 @@ class DBCommands:
         )
         request = await self.session.execute(sql)
         return request.scalars().first()
-

@@ -34,4 +34,4 @@ class PostAd(Base):
     __mapper_args__ = {"eager_defaults": True}
 
     def __repr__(self):
-        return f'Posted Ad (ID: {self.post_id} - {[self.__dict__]})'
+        return f'Posted Ad (ID: {self.post_id} - {self.post_type})'

@@ -1,3 +1,4 @@
+import pytz
 from aiogram import Bot
 from aiogram.contrib.fsm_storage.redis import RedisStorage2
 from apscheduler.jobstores.redis import RedisJobStore
@@ -7,6 +8,7 @@ from apscheduler_di import ContextSchedulerDecorator
 from sqlalchemy.orm import sessionmaker
 
 from tgbot.config import load_config, Config
+from tgbot.constants import TIMEZONE
 
 
 def setup_scheduler(bot: Bot = None, config: Config = None, storage: RedisStorage2 = None, session=None):
@@ -23,7 +25,7 @@ def setup_scheduler(bot: Bot = None, config: Config = None, storage: RedisStorag
     }
 
     scheduler = ContextSchedulerDecorator(
-        AsyncIOScheduler(jobstores=job_stores, timezone='Europe/Kiev')
+        AsyncIOScheduler(jobstores=job_stores, timezone=pytz.timezone(TIMEZONE))
     )
     if not bot:
         bot = Bot(config.tg_bot.token)

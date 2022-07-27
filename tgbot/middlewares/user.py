@@ -19,7 +19,7 @@ class UserDB(LifetimeControllerMiddleware):
             raise CancelHandler()
 
         if user:
-            if user.restricted_till and user.restricted_till < datetime.datetime.now(pytz.timezone("Europe/Kiev")):
+            if user.restricted_till and user.restricted_till < datetime.datetime.now(tz=pytz.timezone("utc")):
                 user.restricted_till = None
 
             if user.first_name != obj.from_user.first_name:
