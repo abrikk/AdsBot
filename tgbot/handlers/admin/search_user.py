@@ -102,8 +102,9 @@ async def manage_user(query: types.InlineQuery, session):
 
 
 def register_inline_mode(dp: Dispatcher):
-    dp.register_inline_handler(all_queries, IsUserExist(), IsNotSender())
     dp.register_inline_handler(search_user, IsUserExist(), Text(contains="пользователи"), AdminFilter(),
                                ChatTypeFilter(types.ChatType.SENDER))
     dp.register_inline_handler(manage_user, IsUserExist(), Text(contains="управление пользователем"), AdminFilter(),
                                ChatTypeFilter([types.ChatType.GROUP, types.ChatType.SUPERGROUP]))
+    dp.register_inline_handler(all_queries, IsUserExist(), IsNotSender())
+
