@@ -20,6 +20,7 @@ from tgbot.constants import OWNER, ADMIN, USER, BANNED
 from tgbot.filters.inline_user_filter import InlineUserFilter
 from tgbot.filters.manage_filter import ManageUser
 from tgbot.handlers.create_ad.form import when_not, get_user_mention
+from tgbot.keyboards.inline import manage_post
 from tgbot.misc.states import Main, ShowUser
 from tgbot.models.post_ad import PostAd
 from tgbot.models.user import User
@@ -169,6 +170,14 @@ async def change_user_role(call: types.CallbackQuery, _widget: Any, manager: Dia
                 scheduler.remove_job("check_" + str(post_ad.post_id))
             except JobLookupError:
                 logging.warning("Job not found")
+
+            await call.bot.edit_message_text(
+                chat_id=config.chats.private_group_id,
+                message_id=post_ad.admin_group_message_id,
+                text=f"#УдаленоИззаБана\n\n"
+                     f"Объявление было удалено из-за бана пользователя администратором {call.from_user.get_mention()}.",
+                reply_markup=manage_post(user_id, argument="only_search_user")
+            )
 
             await session.delete(post_ad)
 
