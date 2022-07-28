@@ -1,5 +1,5 @@
 from aiogram import types, Dispatcher
-from aiogram.dispatcher.filters import ChatTypeFilter, Text, ContentTypeFilter
+from aiogram.dispatcher.filters import ChatTypeFilter, Text
 from aiogram.utils.markdown import hcode, quote_html, hlink
 
 from tgbot.config import Config
@@ -107,4 +107,3 @@ def register_inline_mode(dp: Dispatcher):
     dp.register_inline_handler(manage_user, IsUserExist(), Text(contains="управление пользователем"), AdminFilter(),
                                ChatTypeFilter([types.ChatType.GROUP, types.ChatType.SUPERGROUP]))
     dp.register_inline_handler(all_queries, IsUserExist(), IsNotSender())
-

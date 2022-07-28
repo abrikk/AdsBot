@@ -18,7 +18,6 @@ async def start_bot(message: types.Message, config: Config, session, dialog_mana
             role = OWNER
         elif user_id in config.tg_bot.admin_ids or role_in_channel == 'administrator':
             role: str = ADMIN
-            role: str = OWNER
         elif role_in_channel == BANNED:
             role: str = BANNED
         else:
