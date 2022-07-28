@@ -53,7 +53,7 @@ async def set_default(_, dialog_manager: DialogManager):
     widget_data.update(limits)
 
     await dialog_manager.dialog().find('stage').set_checked(event="", item_id="description")
-    await dialog_manager.dialog().find('currency_code').set_checked(event="", item_id="UAH")
+    await dialog_manager.dialog().find('currency_code').set_checked(event="", item_id="RUB")
 
 
 async def get_currency_data(**_kwargs):

@@ -205,4 +205,4 @@ class Ad:
 
     @property
     def currency(self):
-        return {'USD': 'дол.', 'EUR': 'евро', 'RUB': 'руб.', 'UAH': 'грн.'}.get(self.currency_code, "грн.")
+        return {'USD': 'дол.', 'EUR': 'евро', 'RUB': 'руб.', 'UAH': 'грн.'}.get(self.currency_code, "руб.")
