@@ -27,7 +27,7 @@ async def ask_if_active(user_id: int, post_id: int, channel_username: str, chann
             disable_web_page_preview=False
         )
 
-    except BotBlocked:
+    except BotBlocked as exc:
         async with session() as session:
             post_ids: list[int] = await session.execute(select(PostAd.post_id).where(PostAd.user_id == user_id))
 
@@ -66,7 +66,7 @@ async def ask_if_active(user_id: int, post_id: int, channel_username: str, chann
                 await session.delete(post_ad)
 
             await session.commit()
-
+        logging.warning(exc)
         return
 
     time_to_check = datetime.datetime.now(tz=pytz.timezone(TIMEZONE)) + datetime.timedelta(hours=12, minutes=30)

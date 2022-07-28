@@ -1,6 +1,4 @@
-import os
-from io import StringIO
-from pathlib import Path
+import io
 
 from aiogram import types, Dispatcher
 from aiogram.dispatcher.filters import Command
@@ -9,22 +7,17 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 
 async def show_all_jobs(message: types.Message):
-    out_dir = os.getcwd() + '/tgbot/handlers/admin'
     scheduler: AsyncIOScheduler = message.bot.get("scheduler")
-    out = StringIO()
+    count_jobs: int = len(scheduler.get_jobs("default"))
+
+    out = io.StringIO()
     scheduler.print_jobs(out=out)
-    jobs: list = out.getvalue().split("\n")
 
-    with open(file=os.path.join(out_dir, "jobs.txt"), mode="w+") as txt_file:
-        txt_file.seek(0)
-
-        txt_file.writelines("\n".join(jobs))
-
-    caption = f"The total number of jobs is {hcode(len(jobs))}."
+    caption = f"The total number of jobs is {hcode(count_jobs)}."
 
     await message.bot.send_document(
         chat_id=message.from_user.id,
-        document=types.InputFile(Path(txt_file.name)),
+        document=types.InputFile(path_or_bytesio=io.BytesIO(out.getvalue().encode("utf-8")), filename="jobs.txt"),
         caption=caption
     )
 

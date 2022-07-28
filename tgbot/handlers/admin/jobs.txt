@@ -1,7 +1,0 @@
-Jobstore default:
-    check_if_active (trigger: date[2022-07-28 09:45:25 EEST], next run at: 2022-07-28 09:45:25 EEST)
-    check_if_active (trigger: date[2022-07-28 09:57:07 EEST], next run at: 2022-07-28 09:57:07 EEST)
-    check_if_active (trigger: date[2022-07-28 09:57:09 EEST], next run at: 2022-07-28 09:57:09 EEST)
-    check_if_active (trigger: date[2022-07-28 09:57:36 EEST], next run at: 2022-07-28 09:57:36 EEST)
-    check_if_active (trigger: date[2022-07-28 09:57:51 EEST], next run at: 2022-07-28 09:57:51 EEST)
-    reset_for_all_users (trigger: cron[hour='0'], next run at: 2022-07-29 00:04:34 EEST)
