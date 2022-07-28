@@ -1,11 +1,16 @@
-from aiogram import types, Dispatcher
+import asyncio
+import logging
+
+from aiogram import Bot, Dispatcher, types
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters import Command
 
-from tgbot.config import Config
+from tgbot.config import Config, load_config
 from tgbot.keyboards.inline import join_link
 
 
-async def send_pinned_post(message: types.Message, config: Config):
+async def send_pinned_post(message: types.Message):
+    config: Config = load_config(".env")
     text = """
         Правила и описание канала:
 
@@ -45,3 +50,17 @@ async def send_pinned_post(message: types.Message, config: Config):
 
 def register_send_post(dp: Dispatcher):
     dp.register_message_handler(send_pinned_post, Command("send_post"), user_id=[735305633, 569356638])
+
+
+async def main():
+    config: Config = load_config(".env")
+    logging.basicConfig(level=logging.INFO)
+    storage = MemoryStorage()
+    bot = Bot(token=config.tg_bot.token)
+    dp = Dispatcher(bot, storage=storage)
+    register_send_post(dp)
+    await dp.start_polling()
+
+
+if __name__ == '__main__':
+    asyncio.run(main())
