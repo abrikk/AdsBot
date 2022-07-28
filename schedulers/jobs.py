@@ -3,10 +3,11 @@ import datetime
 
 import pytz
 from aiogram import Bot
-from aiogram.utils.exceptions import MessageToDeleteNotFound
+from aiogram.utils.exceptions import MessageToDeleteNotFound, BotBlocked
+from apscheduler.jobstores.base import JobLookupError
 from apscheduler.schedulers.base import BaseScheduler
 from apscheduler.triggers.date import DateTrigger
-from sqlalchemy import update
+from sqlalchemy import update, select
 from sqlalchemy.orm import sessionmaker
 
 from tgbot.constants import TIMEZONE
@@ -17,13 +18,56 @@ from tgbot.models.user import User
 
 
 async def ask_if_active(user_id: int, post_id: int, channel_username: str, channel_id: int,
-                        private_group_id: int, bot: Bot, scheduler: BaseScheduler):
-    ask_message = await bot.send_message(
-        user_id,
-        f'Ваше объявление {make_link_to_post(channel_username, post_id)} еще актуальное?',
-        reply_markup=confirm_post(post_id),
-        disable_web_page_preview=False
-    )
+                        private_group_id: int, bot: Bot, scheduler: BaseScheduler, session: sessionmaker):
+    try:
+        ask_message = await bot.send_message(
+            user_id,
+            f'Ваше объявление {make_link_to_post(channel_username, post_id)} еще актуальное?',
+            reply_markup=confirm_post(post_id),
+            disable_web_page_preview=False
+        )
+
+    except BotBlocked:
+        async with session() as session:
+            post_ids: list[int] = await session.execute(select(PostAd.post_id).where(PostAd.user_id == user_id))
+
+            for id in post_ids:
+                post_ad: PostAd = await session.get(PostAd, id)
+
+                try:
+                    if post_ad.related_messages:
+                        for message in post_ad.related_messages:
+                            await bot.delete_message(
+                                chat_id=channel_id,
+                                message_id=message.message_id
+                            )
+                    else:
+                        await bot.delete_message(
+                            chat_id=channel_id,
+                            message_id=post_ad.post_id
+                        )
+                except MessageToDeleteNotFound:
+                    logging.warning("Message to delete not found")
+
+                try:
+                    scheduler.remove_job("ask_" + str(post_ad.post_id))
+                    scheduler.remove_job("check_" + str(post_ad.post_id))
+                except JobLookupError:
+                    logging.warning("Job not found")
+
+                await bot.edit_message_text(
+                    chat_id=private_group_id,
+                    message_id=post_ad.admin_group_message_id,
+                    text=f"#УдаленоИззаБлокировкиБота\n\n"
+                         f"Объявление было удалено из-за того что пользователь заблокировал бота.",
+                    reply_markup=manage_post(user_id, argument="only_search_user")
+                )
+
+                await session.delete(post_ad)
+
+            await session.commit()
+
+        return
 
     time_to_check = datetime.datetime.now(tz=pytz.timezone(TIMEZONE)) + datetime.timedelta(hours=12, minutes=30)
     scheduler.add_job(
@@ -58,17 +102,12 @@ async def check_if_active(user_id: int, post_id: int, channel_id: int, private_g
         await session.delete(post_ad)
         await session.commit()
 
-        await bot.edit_message_reply_markup(
-            chat_id=user_id,
-            message_id=ask_message_id,
-            reply_markup=None
-        )
-
         await bot.send_message(
             chat_id=user_id,
             text=f"Ваше объявление было удалено из канала, поскольку вы "
                  f"не подтвердили его актуальность.",
-            reply_to_message_id=ask_message_id
+            reply_to_message_id=ask_message_id,
+            reply_markup=None
         )
 
         await bot.edit_message_text(

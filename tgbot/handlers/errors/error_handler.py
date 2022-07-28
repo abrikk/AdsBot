@@ -14,7 +14,7 @@ async def errors_handler(update: Update, exception: Exception, config: Config):
 
     out_dir = os.getcwd()+'/tgbot/handlers/errors'
 
-    with open(file=os.path.join(out_dir, "traceback.txt"), mode="w+") as txt_file:
+    with open(file=os.path.join(out_dir, "traceback.txt."), mode="w+") as txt_file:
         txt_file.seek(0)
 
         for line in traceback_of_exception_lines:
