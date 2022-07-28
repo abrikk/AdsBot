@@ -5,12 +5,13 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters import Command
 
-from tgbot.config import Config, load_config
 from tgbot.keyboards.inline import join_link
+
+API_TOKEN = "PLACE YOUR TOKEN HERE"
+CHAT_ID = -123456789
 
 
 async def send_pinned_post(message: types.Message):
-    config: Config = load_config(".env")
     text = """
         Правила и описание канала:
 
@@ -40,7 +41,7 @@ async def send_pinned_post(message: types.Message):
 
     bot_link = f"https://t.me/{(await message.bot.me).username}"
     post = await message.bot.send_message(
-        chat_id=config.chats.main_channel_id,
+        chat_id=CHAT_ID,
         text=text,
         reply_markup=join_link(bot_link)
     )
@@ -53,10 +54,12 @@ def register_send_post(dp: Dispatcher):
 
 
 async def main():
-    config: Config = load_config(".env")
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(
+        level=logging.INFO,
+        format=u'%(filename)s:%(lineno)d #%(levelname)-8s [%(asctime)s] - %(name)s - %(message)s',
+    )
     storage = MemoryStorage()
-    bot = Bot(token=config.tg_bot.token)
+    bot = Bot(API_TOKEN)
     dp = Dispatcher(bot, storage=storage)
     register_send_post(dp)
     await dp.start_polling()
