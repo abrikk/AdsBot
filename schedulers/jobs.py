@@ -25,7 +25,7 @@ async def ask_if_active(user_id: int, post_id: int, channel_username: str, chann
         disable_web_page_preview=False
     )
 
-    time_to_check = datetime.datetime.now(tz=pytz.timezone(TIMEZONE)) + datetime.timedelta(hours=12)
+    time_to_check = datetime.datetime.now(tz=pytz.timezone(TIMEZONE)) + datetime.timedelta(hours=12, minutes=30)
     scheduler.add_job(
         check_if_active,
         trigger=DateTrigger(time_to_check, timezone=TIMEZONE),
