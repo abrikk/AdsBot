@@ -19,7 +19,7 @@ async def clean_chat_member_updated(message: types.Message):
 
 
 def register_group_approval(dp: Dispatcher):
-    dp.register_message_handler(clean_chat_member_updated, content_types=[
+    dp.register_message_handler(clean_chat_member_updated, IsGroup(), content_types=[
         types.ContentType.NEW_CHAT_MEMBERS, types.ContentType.LEFT_CHAT_MEMBER
     ])
     dp.register_chat_member_handler(proccess_chat_join_user, IsGroup())
