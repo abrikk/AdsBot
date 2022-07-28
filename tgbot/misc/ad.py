@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 import pytz
-from aiogram.utils.markdown import hitalic, hcode
+from aiogram.utils.markdown import hitalic, hcode, hbold
 
 
 @dataclass
@@ -62,9 +62,9 @@ class Ad:
                 tprice = 'Желаемая цена (опционально)'
 
             return (self.current_heading(where=where) +
-                    f"1. {tdescription}: {hitalic(description)}\n"
+                    f"1. {tdescription}: {description}\n"
                     f"2. {tphoto}: {photos_len}\n"
-                    f"3. {tprice}: {hcode(str(price) + ' ' + (self.price and self.currency or ''))} {self.price and negotiable or ''}\n"
+                    f"3. {tprice}: {hbold(str(price)) + ' ' + (self.price and self.currency or '')} {self.price and negotiable or ''}\n"
                     f"4. {tcontact}: {contacts}\n")
 
     def current_heading(self, where: str = None) -> str:
@@ -98,16 +98,16 @@ class Ad:
                 elif not self.photos and self.state_class == "exchange":
                     return '📷 Отправьте фото товара или услуг которое вы хотите' \
                            ' обменять (этот раздел можно пропустить).\n' \
-                           f'P.s. Максимальное количество картинок: <code>{self.pic_limit}</code>:\n\n'
+                           f'P.s. Максимальное количество картинок - <b>{self.pic_limit}</b>:\n\n'
                 elif not self.photos:
                     return '📷 Отправьте фото ' \
                            'по одному (этот раздел можно пропустить).\n' \
-                           f'P.s. Максимальное количество картинок: <code>{self.pic_limit}</code>:\n\n'
+                           f'P.s. Максимальное количество картинок - <b>{self.pic_limit}</b>:\n\n'
                 else:
                     return '📷 Чтобы изменить картинку, просто отправьте ' \
                            'новую картинку, а чтобы удалить картинку нажми на ' \
                            'кнопку ниже.\n' \
-                           f'P.s. Максимальное количество картинок: <code>{self.pic_limit}</code>:\n\n'
+                           f'P.s. Максимальное количество картинок - <b>{self.pic_limit}</b>:\n\n'
 
     def preview(self, where: str = None) -> str:
         preview_list: list[str] = [self.make_tags()]
@@ -122,7 +122,7 @@ class Ad:
             preview_list.append(f"Стоимость: {str(self.price) + ' ' + (self.price and self.currency or '')} "
                                 f"{self.price and negotiable or ''}")
         elif self.price and self.state_class not in ("sell", "rent", "exchange"):
-            preview_list.append(f"Желаемая цена: {hcode(str(self.price) + ' ' + self.currency)}")
+            preview_list.append(f"Желаемая цена: {str(self.price) + ' ' + self.currency}")
 
         preview_list.append(f"Контактные данные: {self.humanize_phone_numbers()}")
 
@@ -145,12 +145,12 @@ class Ad:
         confirm_list: list[str] = [
             "Вы уверены что хотите опубликовать объявление"
             " со следующими данными?",
-            f"Описание: {hitalic(self.description)}"
+            f"Описание: {self.description}"
         ]
         if self.price and self.state_class not in ("sell", "rent"):
-            confirm_list.append(f"Желаемая цена: {hcode(str(self.price) + ' ' + self.currency)}")
+            confirm_list.append(f"Желаемая цена: {str(self.price) + ' ' + self.currency}")
         elif self.price:
-            confirm_list.append(f"Цена: {hcode(str(self.price) + ' ' + (self.price and self.currency or ''))} "
+            confirm_list.append(f"Цена: {str(self.price) + ' ' + (self.price and self.currency or '')} "
                                 f"{self.price and negotiable or ''}",)
         confirm_list.append(f"Контактные данные: {self.humanize_phone_numbers()}")
         if self.photos:
@@ -205,4 +205,4 @@ class Ad:
 
     @property
     def currency(self):
-        return {'USD': '$', 'EUR': '€', 'RUB': '₽', 'UAH': '₴'}.get(self.currency_code, "₴")
+        return {'USD': 'дол.', 'EUR': 'евро', 'RUB': 'руб.', 'UAH': 'грн.'}.get(self.currency_code, "грн.")

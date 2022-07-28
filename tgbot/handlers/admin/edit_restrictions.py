@@ -73,7 +73,7 @@ edit_restrictions_dialog = Dialog(
             items="rest_buttons",
         ),
         Start(
-            text=Const("Назад"),
+            text=Const("⬅️ Назад"),
             id="back_to_panel",
             state=AdminPanel.admin
         ),

@@ -1,5 +1,9 @@
-from sqlalchemy import select, or_, update, and_, func, String
+from datetime import datetime
 
+import pytz
+from sqlalchemy import select, or_, update, and_, func, String, extract
+
+from tgbot.constants import TIMEZONE
 from tgbot.models.post_ad import PostAd
 from tgbot.models.restriction import Restriction
 from tgbot.models.tag_category import TagCategory
@@ -173,3 +177,33 @@ class DBCommands:
         )
         request = await self.session.execute(sql)
         return request.scalars().first()
+
+    # statistics
+    async def count_users(self, condition: str = "all"):
+        options: dict = {
+            "all": True,
+            "day": extract("DAY", User.created_at) == datetime.now(tz=pytz.timezone(TIMEZONE)).day,
+            "month": extract("MONTH", User.created_at) == datetime.now(tz=pytz.timezone(TIMEZONE)).month,
+            "admin": User.role == "admin",
+            "banned": User.role == "banned",
+            "restricted": User.restricted_till.is_not(None),
+        }
+        sql = select(func.count("*")).select_from(User).where(options[condition])
+        request = await self.session.execute(sql)
+        return request.scalars().first()
+
+    async def count_ads(self, condition: str = "all"):
+        options: dict = {
+            "all": True,
+            "day": extract("DAY", PostAd.created_at) == datetime.now(tz=pytz.timezone(TIMEZONE)).day,
+            "month": extract("MONTH", PostAd.created_at) == datetime.now(tz=pytz.timezone(TIMEZONE)).month,
+            "sell": PostAd.post_type == "sell",
+            "buy": PostAd.post_type == "buy",
+            "rent": PostAd.post_type == "rent",
+            "occupy": PostAd.post_type == "occupy",
+            "exchange": PostAd.post_type == "exchange",
+        }
+        sql = select(func.count("*")).select_from(PostAd).where(options[condition])
+        request = await self.session.execute(sql)
+        return request.scalars().first()
+

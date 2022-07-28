@@ -5,6 +5,7 @@ from aiogram_dialog import DialogManager, ShowMode
 from tgbot.config import Config
 from tgbot.handlers.create_ad.form import make_link_to_post
 from tgbot.misc.ad import Ad
+from tgbot.misc.states import MyAds
 from tgbot.models.post_ad import PostAd
 
 
@@ -15,6 +16,8 @@ async def get_show_my_ad_text(dialog_manager: DialogManager, **_kwargs):
     config: Config = dialog_manager.data.get("config")
     post_id = start_data.get("post_id")
     post_ad: PostAd = await session.get(PostAd, post_id)
+    if not post_ad:
+        await dialog_manager.switch_to(MyAds.show)
     channel = await obj.bot.get_chat(config.chats.main_channel_id)
 
     ad: Ad = Ad(
@@ -37,18 +40,18 @@ async def get_show_my_ad_text(dialog_manager: DialogManager, **_kwargs):
 
 async def get_edit_options(dialog_manager: DialogManager, **_kwargs):
     edit_options: list = [
-        ("description", "Описание"),
-        ("contacts", "Контакты"),
+        ("description", "📝 Описание"),
+        ("contacts", "📞 Контакты"),
     ]
     session = dialog_manager.data.get("session")
     post_id = dialog_manager.current_context().start_data.get("post_id")
     post_ad: PostAd = await session.get(PostAd, post_id)
 
     if post_ad.post_type != "exchange" and post_ad.price is not None:
-        edit_options.insert(1, ("price", "Цена"))
+        edit_options.insert(1, ("price", "💱 Цена"))
 
     if post_ad.related_messages:
-        edit_options.append(("photos", "Фото"))
+        edit_options.append(("photos", "📸 Фото"))
 
     return {"edit_options": edit_options}
 
@@ -107,7 +110,7 @@ async def get_edit_text(dialog_manager: DialogManager, **_kwargs):
         current_data_text = "Текущие контактные данные: " + current_contact
     elif edit == "price":
         currencies: dict = {'USD': '$', 'EUR': '€', 'RUB': '₽', 'UAH': '₴'}
-        current_data_text = "Текущая цена: " + str(f'{current_data.get(edit):,}') + " " + currencies.get(post_ad.currency_code)
+        current_data_text = "Текущая цена: " + str(current_data.get(edit)) + " " + currencies.get(post_ad.currency_code)
     else:
         current_data_text = "Текущее описание: " + hitalic(current_data.get(edit))
 
@@ -132,7 +135,7 @@ async def get_can_save_edit(dialog_manager: DialogManager, **_kwargs) -> dict:
         "price": post_ad.price,
         "contacts": post_ad.contacts.split(","),
         "photos": {m.photo_file_unique_id: m.photo_file_id for m in post_ad.related_messages},
-        "negotiable": widget_data.get("negotiable"),
+        "negotiable": widget_data.get("negotiable", False),
         "currency_code": widget_data.get("currency_code")
     }
 

@@ -58,10 +58,10 @@ async def set_default(_, dialog_manager: DialogManager):
 
 async def get_currency_data(**_kwargs):
     currencies = [
-        ('$', 'USD'),
-        ('€', 'EUR'),
-        ('₽', 'RUB'),
-        ('₴', 'UAH')
+        ('дол.', 'USD'),
+        ('евро', 'EUR'),
+        ('руб.', 'RUB'),
+        ('грн.', 'UAH')
     ]
     return {'currencies': currencies}
 
@@ -146,7 +146,7 @@ async def price_validator(message: types.Message, dialog: ManagedDialogAdapterPr
 
 
 async def currency_selected(_call: types.CallbackQuery, _widget: Any, manager: DialogManager, item_id: str):
-    currencies = {'USD': '$', 'EUR': '€', 'RUB': '₽', 'UAH': '₴'}
+    currencies = {'USD': 'дол.', 'EUR': 'евро', 'RUB': 'руб.', 'UAH': 'грн.'}
     manager.current_context().widget_data['currency'] = currencies[item_id]
 
 

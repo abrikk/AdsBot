@@ -10,7 +10,7 @@ from tgbot.constants import TIMEZONE
 
 def create_jobs(scheduler: AsyncIOScheduler, user_id: int, post_id: int, channel_id: int, private_group_id: int,
                 channel_username: str):
-    time_to_ask = datetime.datetime.now(tz=pytz.timezone(TIMEZONE)) + datetime.timedelta(seconds=10)
+    time_to_ask = datetime.datetime.now(tz=pytz.timezone(TIMEZONE)) + datetime.timedelta(hours=12)
 
     scheduler.add_job(
         ask_if_active,

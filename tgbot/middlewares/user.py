@@ -9,9 +9,12 @@ from tgbot.models.user import User
 
 
 class UserDB(LifetimeControllerMiddleware):
-    skip_patterns = ["error", "update"]
+    skip_patterns = ["error", "update", "channel_post", "edited_channel_post"]
 
     async def pre_process(self, obj, data, *args):
+        if obj.from_user.id == 777000:
+            raise CancelHandler()
+
         session = data.get("session")
         user = await session.get(User, obj.from_user.id)
 

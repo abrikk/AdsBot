@@ -3,48 +3,49 @@ from aiogram.dispatcher.filters import ChatTypeFilter, Text, ContentTypeFilter
 from aiogram.utils.markdown import hcode, quote_html, hlink
 
 from tgbot.config import Config
+from tgbot.filters.Is_user_exist import IsUserExist
 from tgbot.filters.admin import AdminFilter
 from tgbot.filters.is_not_sender import IsNotSender
 from tgbot.keyboards.inline import join_link
 from tgbot.models.user import User
 
 
-# async def all_queries(query: types.InlineQuery, config: Config):
-#     bot = query.bot
-#     print("all_queries")
-#
-#     chat_id = config.tg_bot.channel_id
-#     channel_username = (await bot.get_chat(chat_id)).username
-#     channel_link = f"https://t.me/{channel_username}"
-#     bot_link = f"https://t.me/{(await bot.me).username}"
-#
-#     bot_involved_text = f"🇺🇦 Присоединяйся! {hlink('Бот', bot_link)} для создания объявлений" \
-#                         f" купли-продажи товаров или услуг на канале {channel_link}."
-#
-#     channel_involved_text = f"🇺🇦 Присоединяйся! {hlink('Канал', channel_link)} с объявлениями о купле/продаже " \
-#                             f"товаров или услуг в Мариуполе."
-#
-#     results = [
-#         types.InlineQueryResultArticle(
-#             id="share_bot",
-#             title="Поделиться ботом 🤖",
-#             description="Нажмите на кнопку чтобы поделиться ботом в текущий чат",
-#             input_message_content=types.InputTextMessageContent(
-#                 message_text=bot_involved_text,
-#             ),
-#             reply_markup=join_link(bot_link=bot_link, channel_link=channel_link)
-#         ),
-#         types.InlineQueryResultArticle(
-#             id="share_channel",
-#             title="Поделиться каналом 🌐",
-#             description="Нажмите на кнопку чтобы поделиться каналом объявлений в текущий чат",
-#             input_message_content=types.InputTextMessageContent(
-#                 message_text=channel_involved_text,
-#             ),
-#             reply_markup=join_link(bot_link=bot_link, channel_link=channel_link)
-#         )
-#     ]
-#     await query.answer(results=results, cache_time=20)
+async def all_queries(query: types.InlineQuery, config: Config):
+    bot = query.bot
+    print("all_queries")
+
+    chat_id = config.chats.main_channel_id
+    channel_username = (await bot.get_chat(chat_id)).username
+    channel_link = f"https://t.me/{channel_username}"
+    bot_link = f"https://t.me/{(await bot.me).username}"
+
+    bot_involved_text = f"Присоединяйся! {hlink('Бот', bot_link)} для создания объявлений" \
+                        f" купли-продажи товаров или услуг на канале {channel_link}."
+
+    channel_involved_text = f"Присоединяйся! {hlink('Канал', channel_link)} с объявлениями о купле/продаже " \
+                            f"товаров или услуг в Мариуполе."
+
+    results = [
+        types.InlineQueryResultArticle(
+            id="share_bot",
+            title="Поделиться ботом 🤖",
+            description="Нажмите на кнопку чтобы поделиться ботом в текущий чат",
+            input_message_content=types.InputTextMessageContent(
+                message_text=bot_involved_text,
+            ),
+            reply_markup=join_link(bot_link=bot_link, channel_link=channel_link)
+        ),
+        types.InlineQueryResultArticle(
+            id="share_channel",
+            title="Поделиться каналом 🌐",
+            description="Нажмите на кнопку чтобы поделиться каналом объявлений в текущий чат",
+            input_message_content=types.InputTextMessageContent(
+                message_text=channel_involved_text,
+            ),
+            reply_markup=join_link(bot_link=bot_link, channel_link=channel_link)
+        )
+    ]
+    await query.answer(results=results, cache_time=3)
 
 
 async def search_user(query: types.InlineQuery, db_commands):
@@ -101,8 +102,8 @@ async def manage_user(query: types.InlineQuery, session):
 
 
 def register_inline_mode(dp: Dispatcher):
-    # dp.register_inline_handler(all_queries, IsNotSender())
-    dp.register_inline_handler(search_user, Text(contains="пользователи"), AdminFilter(),
+    dp.register_inline_handler(all_queries, IsUserExist(), IsNotSender())
+    dp.register_inline_handler(search_user, IsUserExist(), Text(contains="пользователи"), AdminFilter(),
                                ChatTypeFilter(types.ChatType.SENDER))
-    dp.register_inline_handler(manage_user, Text(contains="управление пользователем"), AdminFilter(),
+    dp.register_inline_handler(manage_user, IsUserExist(), Text(contains="управление пользователем"), AdminFilter(),
                                ChatTypeFilter([types.ChatType.GROUP, types.ChatType.SUPERGROUP]))

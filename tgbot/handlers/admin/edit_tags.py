@@ -76,7 +76,7 @@ edit_tags_dialog = Dialog(
             )
         ),
         Start(
-            text=Const("Назад"),
+            text=Const("⬅️ Назад"),
             id="back_to_admin",
             state=AdminPanel.admin,
             mode=StartMode.RESET_STACK
@@ -114,11 +114,11 @@ edit_tags_dialog = Dialog(
         ),
         Row(
             Back(
-                text=Const("Отмена"),
+                text=Const("⬅️ Отмена"),
                 on_click=clear_data
             ),
             SwitchTo(
-                text=Const("Удалить"),
+                text=Const("❌ Удалить"),
                 id="del_categories",
                 state=ManageTags.confirm_categories,
                 when=chosen_category_to_delete
@@ -132,12 +132,12 @@ edit_tags_dialog = Dialog(
         Const(text="Отправьте название категории тегов, которую вы хотите добавить:"),
         Row(
             Start(
-                text=Const("Назад"),
+                text=Const("◀️ Назад"),
                 id="back_to_admin",
                 state=AdminPanel.admin
             ),
             SwitchTo(
-                text=Const("Отмена"),
+                text=Const("⬅️ Отмена"),
                 id="back_to_tags",
                 state=ManageTags.main,
                 on_click=clear_data
@@ -170,7 +170,7 @@ edit_tags_dialog = Dialog(
             )
         ),
         SwitchTo(
-            text=Const("Назад"),
+            text=Const("◀️ Назад"),
             id="back_to_tags",
             state=ManageTags.main,
             on_click=clear_data
@@ -183,12 +183,12 @@ edit_tags_dialog = Dialog(
         Format(text="{add_del_tags_text}", when="add_del_tags_text"),
         Row(
             SwitchTo(
-                text=Const("Назад"),
+                text=Const("◀️️ Назад"),
                 id="back_to_admin",
                 state=ManageTags.main
             ),
             SwitchTo(
-                text=Const("Отмена"),
+                text=Const("⬅️ Отмена"),
                 id="back_to_tags",
                 state=ManageTags.tags
             )
@@ -203,13 +203,13 @@ edit_tags_dialog = Dialog(
         Format(text="{confirm_categories_text}", when="confirm_categories_text"),
         Row(
             SwitchTo(
-                text=Const("Нет"),
+                text=Const("❌ Нет"),
                 id="back_to_main",
                 state=ManageTags.main,
                 on_click=clear_data
             ),
             Button(
-                text=Const("Да"),
+                text=Const("✅ Да"),
                 id="confirm_categories",
                 on_click=delete_chosen_categories
             )
@@ -223,12 +223,12 @@ edit_tags_dialog = Dialog(
         Format(text="{confirm_tags_text}", when="confirm_tags_text"),
         Row(
             SwitchTo(
-                text=Const("Нет"),
+                text=Const("❌ Нет"),
                 id="back_to_tags",
                 state=ManageTags.tags
             ),
             Button(
-                text=Const("Да"),
+                text=Const("✅ Да"),
                 id="confirm_tags",
                 on_click=confirm_tags
             )

@@ -137,7 +137,7 @@ async def get_confirm_text(dialog_manager: DialogManager, **_kwargs):
         "final_text": ad.preview() if current_state == "preview" else ad.confirm(),
         "file_id": get_current_file_id(list(ad.photos.values()), current_page),
         "show_scroll": len(ad.photos) > 1,
-        "photo_text": len(ad.photos) > 1 and current_page and f"{current_page}/{len(ad.photos)}"
+        "photo_text": len(ad.photos) > 1 and current_page and f"{current_page} фото"
     }
 
 

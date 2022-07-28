@@ -15,7 +15,7 @@ from tgbot.misc.ad import Ad
 from tgbot.models.post_ad import PostAd
 
 
-async def update_ad(call: types.CallbackQuery, callback_data: dict,
+async def up_ad(call: types.CallbackQuery, callback_data: dict,
                           config: Config, session):
     bot = call.bot
     scheduler: AsyncIOScheduler = call.bot.get('scheduler')
@@ -164,4 +164,4 @@ async def update_ad(call: types.CallbackQuery, callback_data: dict,
 
 
 def register_ad_status_handler(dp: Dispatcher):
-    dp.register_callback_query_handler(update_ad, conf_cb.filter())
+    dp.register_callback_query_handler(up_ad, conf_cb.filter())

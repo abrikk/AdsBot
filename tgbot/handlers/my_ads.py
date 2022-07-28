@@ -14,8 +14,8 @@ async def get_my_ads_text(dialog_manager: DialogManager, **_kwargs):
     db: DBCommands = dialog_manager.data.get("db_commands")
     my_ads: list = await db.get_my_ads(user_id=dialog_manager.event.from_user.id)
     if not my_ads:
-        return {"my_ads_text": "У вас нету опубликованных объявлений."}
-    text = f"Всего объявлений: {len(my_ads)}\n"
+        return {"my_ads_text": "🤷‍♂️ У вас нету опубликованных объявлений."}
+    text = f"🔰 Всего объявлений: {len(my_ads)}\n"
     ads_data: list = [(desc, post_id) for desc, post_id in my_ads]
 
     return {

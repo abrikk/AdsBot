@@ -43,7 +43,7 @@ def get_widgets() -> tuple:
             )
         ),
         Button(
-            text=Const("Опубликовать"),
+            text=Const("✅ Опубликовать"),
             id="post",
             on_click=request_confirmation,
             when="can_post"
@@ -54,7 +54,7 @@ def get_widgets() -> tuple:
 
 form_dialog = Dialog(
     Window(
-        Const("Выберите категорию вашего объявления:"),
+        Const("🔶 Выберите категорию вашего объявления:"),
         Group(
             Radio(
                 checked_text=Format("✔️ {item[1]}"),
@@ -82,7 +82,7 @@ form_dialog = Dialog(
     ),
 
     Window(
-        Const("Выберите тип вашего объявления:"),
+        Const("🔷 Выберите тип вашего объявления:"),
         ScrollingGroup(
             Radio(
                 checked_text=Format("✔️ {item[1]}"),
@@ -212,16 +212,17 @@ confirm_dialog = Dialog(
             when="show_scroll"
         ),
         Row(
-            Button(
-                text=Const("Назад"),
-                id="back_to_edit",
-                on_click=on_back
-            ),
             Start(
-                text=Const("В главное меню"),
+                text=Const("🔚 В главное меню"),
                 id="to_main",
                 state=Main.main,
-                mode=StartMode.RESET_STACK),
+                mode=StartMode.RESET_STACK
+            ),
+            Button(
+                text=Const("⬅️ Назад"),
+                id="back_to_edit",
+                on_click=on_back
+            )
         ),
         state=ConfirmAd.confirm,
         getter=get_confirm_text,

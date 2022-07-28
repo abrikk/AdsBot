@@ -1,0 +1,6 @@
+  File "/home/abror/Abrik/MyProjects/Orders/SalesAnnouncements/venv/lib/python3.10/site-packages/aiogram/dispatcher/dispatcher.py", line 256, in process_update
+    return await self.message_handlers.notify(update.message)
+  File "/home/abror/Abrik/MyProjects/Orders/SalesAnnouncements/venv/lib/python3.10/site-packages/aiogram/dispatcher/handler.py", line 116, in notify
+    response = await handler_obj.handler(*args, **partial_data)
+  File "/home/abror/Abrik/MyProjects/Orders/SalesAnnouncements/tgbot/handlers/admin/show_jobs.py", line 15, in show_all_jobs
+    scheduler.print_jobs(out=out)

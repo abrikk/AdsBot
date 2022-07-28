@@ -425,7 +425,7 @@ show_user_dialog = Dialog(
         Format(text="{user_text}", when="user_text"),
         Row(
             Button(
-                text=Const("Отмена"),
+                text=Const("⬅️ Отмена"),
                 id="cancel_role",
                 on_click=clear_user_role
             ),
@@ -447,18 +447,18 @@ show_user_dialog = Dialog(
         Format("{input_reason}", when="input_reason"),
         Row(
             Button(
-                text=Const("Отмена"),
+                text=Const("⬅️ Отмена"),
                 id="cancel_ban",
                 on_click=clear_user_role
             ),
             Button(
-                text=Const("Пропустить"),
+                text=Const("⏩ Пропустить"),
                 id="skip_reason",
                 on_click=change_user_role,
                 when=when_not("ban_reason")
             ),
             Button(
-                text=Const("Очистить"),
+                text=Const("🗑 Очистить"),
                 id="clear_input",
                 on_click=clear_input,
                 when="ban_reason"

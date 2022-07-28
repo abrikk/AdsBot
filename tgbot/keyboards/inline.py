@@ -38,10 +38,10 @@ def join_link(bot_link: str, channel_link: str):
             text="Перейти к боту 🤖",
             url=bot_link
         ),
-        InlineKeyboardButton(
-            text="Перейти в канал 📢",
-            url=channel_link
-        )
+        # InlineKeyboardButton(
+        #     text="Перейти в канал 📢",
+        #     url=channel_link
+        # )
     )
     return markup
 

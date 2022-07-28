@@ -2,11 +2,9 @@ import asyncio
 import logging
 
 from aiogram import Bot, Dispatcher
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.contrib.fsm_storage.redis import RedisStorage2
 from aiogram.types import AllowedUpdates
 from aiogram_dialog import DialogRegistry
-from aiogram_dialog.tools import render_transitions
 from apscheduler.triggers.cron import CronTrigger
 
 from schedulers.base import setup_scheduler
@@ -55,7 +53,7 @@ async def main():
 
     scheduler.add_job(
         reset_for_all_users,
-        trigger=CronTrigger(hour=0, minute=0, second=0, jitter=300, timezone=TIMEZONE),
+        trigger=CronTrigger(hour=0, jitter=300, timezone=TIMEZONE),
         id="reset_posted_today",
         replace_existing=True
     )
@@ -68,11 +66,13 @@ async def main():
     register_all_filters(dp)
     register_all_handlers(dp)
     register_all_dialogs(registry)
-    render_transitions(registry)
+
+    allowed_updates = [AllowedUpdates.MESSAGE, AllowedUpdates.CHOSEN_INLINE_RESULT, AllowedUpdates.CALLBACK_QUERY,
+                       AllowedUpdates.INLINE_QUERY, AllowedUpdates.CHAT_MEMBER]
 
     # start
     try:
-        await dp.start_polling(allowed_updates=AllowedUpdates.all())
+        await dp.start_polling(allowed_updates=allowed_updates)
     finally:
         await dp.storage.close()
         await dp.storage.wait_closed()

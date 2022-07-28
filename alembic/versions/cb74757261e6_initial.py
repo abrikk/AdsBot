@@ -1,8 +1,8 @@
 """initial
 
-Revision ID: 09b1d07e8292
+Revision ID: cb74757261e6
 Revises: 
-Create Date: 2022-07-27 13:15:19.827137
+Create Date: 2022-07-27 22:56:51.979250
 
 """
 from alembic import op
@@ -15,7 +15,7 @@ from tgbot.models.restriction import Restriction
 from tgbot.models.tag_category import TagCategory
 from tgbot.models.tags_name import TagName
 
-revision = '09b1d07e8292'
+revision = 'cb74757261e6'
 down_revision = None
 branch_labels = None
 depends_on = None

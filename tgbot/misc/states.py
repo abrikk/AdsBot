@@ -4,6 +4,7 @@ from aiogram.dispatcher.filters.state import StatesGroup, State
 class Main(StatesGroup):
     main = State()
     make_ad = State()
+    statistics = State()
 
 
 class AdminPanel(StatesGroup):

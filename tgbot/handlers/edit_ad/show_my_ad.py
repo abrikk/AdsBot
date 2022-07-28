@@ -19,7 +19,7 @@ show_my_ad_dialog = Dialog(
     Window(
         Format(text="{preview_text}", when="preview_text"),
         Url(
-            text=Const("Перейти к объявлению"),
+            text=Const("↪️ Перейти к объявлению"),
             url=Format("{url}"),
         ),
         Next(
@@ -52,7 +52,7 @@ show_my_ad_dialog = Dialog(
                 on_click=save_edit_option,
             )
         ),
-        Back(text=Const("Назад")),
+        Back(text=Const("⬅️ Назад")),
         state=ShowMyAd.show_edit,
         getter=get_edit_options,
         preview_add_transitions=[Next()]
@@ -60,13 +60,13 @@ show_my_ad_dialog = Dialog(
     Window(
         Format(text="{edit_text}", when="edit_text"),
         Button(
-            text=Const("Удалить контакт"),
+            text=Const("❌ Удалить контакт"),
             id="delete_contact",
             on_click=delete_item,
             when="delete_contact"
         ),
         Button(
-            text=Const("Удалить фото"),
+            text=Const("❌ Удалить фото"),
             id="delete_photo",
             on_click=delete_item,
             when="delete_photo"
@@ -91,11 +91,11 @@ show_my_ad_dialog = Dialog(
         ),
         Row(
             Back(
-                text=Const("Отмена"),
+                text=Const("⬅️ Отмена"),
                 on_click=clear_data
             ),
             Button(
-                text=Const("Сохранить"),
+                text=Const("✅ Сохранить"),
                 id="save_edit",
                 on_click=save_edit,
                 when="can_save_edit"
@@ -114,12 +114,12 @@ show_my_ad_dialog = Dialog(
                "Вы уверены, что хотите удалить это объявление безвозвратно?"),
         Row(
             SwitchTo(
-                Const("Нет ❌"),
+                Const("❌ Нет"),
                 id="delete_post_no",
                 state=ShowMyAd.true
             ),
             Button(
-                Const("Да ✅"),
+                Const("✅ Да"),
                 id="yes_delete",
                 on_click=delete_post_ad
             )

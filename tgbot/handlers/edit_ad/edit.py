@@ -168,7 +168,8 @@ async def save_edit_option(_call: types.CallbackQuery, _widget: ManagedWidgetAda
         if post_ad.post_type in ("sell", "rent"):
             await manager.dialog().find('negotiable').set_checked(event=manager.event,
                                                                          checked=post_ad.negotiable)
-            await manager.dialog().find('currency_code').set_checked(event="", item_id=post_ad.currency_code)
+        if post_ad.price:
+            await manager.dialog().find('currency_code').set_checked(event=manager.event, item_id=post_ad.currency_code)
 
     await manager.dialog().next()
 
