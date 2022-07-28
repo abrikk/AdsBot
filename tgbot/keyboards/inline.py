@@ -30,19 +30,24 @@ def show_posted_ad(post_link: str):
     return markup
 
 
-def join_link(bot_link: str, channel_link: str):
+def join_link(bot_link: str, channel_link: str = None):
     markup = InlineKeyboardMarkup(row_width=1)
 
     markup.add(
         InlineKeyboardButton(
             text="Перейти к боту 🤖",
             url=bot_link
-        ),
-        # InlineKeyboardButton(
-        #     text="Перейти в канал 📢",
-        #     url=channel_link
-        # )
+        )
     )
+
+    if channel_link:
+        markup.add(
+            InlineKeyboardButton(
+                text="Перейти в канал 📢",
+                url=channel_link
+            )
+        )
+
     return markup
 
 
