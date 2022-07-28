@@ -35,6 +35,7 @@ async def up_ad(call: types.CallbackQuery, callback_data: dict,
         return
 
     channel = await call.bot.get_chat(config.chats.main_channel_id)
+    post_link: str = make_link_to_post(channel_username=channel.username, post_id=post_id)
 
     try:
         if post_ad.related_messages:
@@ -147,13 +148,14 @@ async def up_ad(call: types.CallbackQuery, callback_data: dict,
             reply_markup=show_posted_ad(ad.post_link)
         )
 
-        ad.post_link = make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id)
+        ad.post_link = make_link_to_post(channel_username=channel.username, post_id=post_id)
 
         await bot.edit_message_text(
             chat_id=config.chats.private_group_id,
             message_id=post_ad.admin_group_message_id,
             text=ad.post(where="admin_group"),
-            reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id, full_name=call.from_user.full_name)
+            reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id,
+                                     full_name=call.from_user.full_name, url=post_link)
         )
 
         channel = await call.bot.get_chat(config.chats.main_channel_id)

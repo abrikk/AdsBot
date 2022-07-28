@@ -72,6 +72,7 @@ async def main():
 
     # start
     try:
+        await dp.skip_updates()
         await dp.start_polling(allowed_updates=allowed_updates)
     finally:
         await dp.storage.close()

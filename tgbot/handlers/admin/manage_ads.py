@@ -7,7 +7,7 @@ from apscheduler.jobstores.base import JobLookupError
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from tgbot.config import Config
-from tgbot.handlers.create_ad.form import get_user_mention
+from tgbot.handlers.create_ad.form import get_user_mention, make_link_to_post
 from tgbot.keyboards.inline import confirm_delete_ad, manage_cb, manage_post, confirm_cb
 from tgbot.models.post_ad import PostAd
 from tgbot.services.db_commands import DBCommands
@@ -30,11 +30,14 @@ async def delete_ad_confirmation(call: types.CallbackQuery, callback_data: dict,
     await call.answer()
     post_id: int = int(callback_data.get("post_id"))
     action: str = callback_data.get("action")
+    channel = await call.bot.get_chat(config.chats.main_channel_id)
+    post_link: str = make_link_to_post(channel_username=channel.username, post_id=post_id)
 
     if action == "no":
         await call.message.edit_text(
             text=call.message.text.replace("\n\n ⚠️ Вы уверены что хотите удалить это объявление?", ""),
-            reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id, full_name=call.from_user.full_name)
+            reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id,
+                                     full_name=call.from_user.full_name, url=post_link)
         )
     else:
         scheduler: AsyncIOScheduler = call.bot.get("scheduler")
