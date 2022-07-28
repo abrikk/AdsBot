@@ -56,10 +56,10 @@ async def get_statistics_text(dialog_manager: DialogManager, **_kwargs):
             f"🆕 Количество новых объявлений за сегодня: {hcode(count_ads_today)}\n"
             f"🆕 Количество новых объявлений за месяц: {hcode(count_ads_in_month)}\n\n"
             f"🟠 Всего объявлений с рубрикой «Продам» ({round((count_ads_sell/count_ads), 2)*100}%): {hcode(count_ads_sell)}\n"
-            f"🔴 Всего объявлений с рубрикой «Куплю» ({round((count_ads_sell/count_ads), 2)*100}%): {hcode(count_ads_buy)}\n"
-            f"🟡 Всего объявлений с рубрикой «Сдам» ({round((count_ads_sell/count_ads), 2)*100}%): {hcode(count_ads_rent)}\n"
-            f"🟢 Всего объявлений с рубрикой «Сниму» ({round((count_ads_sell/count_ads), 2)*100}%): {hcode(count_ads_occupy)}\n"
-            f"🔃 Всего объявлений с рубрикой «Обменяю» ({round((count_ads_sell/count_ads), 2)*100}%): {hcode(count_ads_exchange)}")
+            f"🔴 Всего объявлений с рубрикой «Куплю» ({round((count_ads_buy/count_ads), 2)*100}%): {hcode(count_ads_buy)}\n"
+            f"🟡 Всего объявлений с рубрикой «Сдам» ({round((count_ads_rent/count_ads), 2)*100}%): {hcode(count_ads_rent)}\n"
+            f"🟢 Всего объявлений с рубрикой «Сниму» ({round((count_ads_occupy/count_ads), 2)*100}%): {hcode(count_ads_occupy)}\n"
+            f"🔃 Всего объявлений с рубрикой «Обменяю» ({round((count_ads_exchange/count_ads), 2)*100}%): {hcode(count_ads_exchange)}")
 
     return {"statistics_text": text}
 
