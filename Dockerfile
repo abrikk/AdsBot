@@ -8,4 +8,4 @@ RUN pip install -r requirements.txt
 COPY alembic.ini /app/alembic.ini
 COPY alembic /app/alembic
 COPY . /app
-CMD ["python", "bot.py"]
+CMD ["python", "temp_file.py"]
