@@ -117,7 +117,7 @@ async def get_edit_text(dialog_manager: DialogManager, **_kwargs):
     return {
         "edit_text": text.get(edit) + current_data_text,
         "delete_contact": edit == "contacts" and len(widget_data.get("contacts")) > 0,
-        "delete_photo": edit == "photos" and bool(widget_data.get("photos", {})),
+        "delete_photo": edit == "photos" and len(widget_data.get("photos", {})) != 1,
         "show_currency": edit == "price",
         "show_checkbox": edit == "price" and post_ad.post_type in ("sell", "rent")
     }
