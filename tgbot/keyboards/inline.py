@@ -72,6 +72,7 @@ def manage_post(user_id: int | str, post_id: int | str = None, url: str = None, 
                 callback_data=manage_cb.new(post_id=str(post_id), user_id=str(user_id))
             )
         )
+
     markup.add(
         InlineKeyboardButton(
             text="Управление пользователем ⚙️️",

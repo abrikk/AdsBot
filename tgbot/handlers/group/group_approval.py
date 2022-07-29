@@ -1,3 +1,5 @@
+import logging
+
 from aiogram import Dispatcher, types
 
 from tgbot.filters.is_group import IsGroup
@@ -6,8 +8,10 @@ from tgbot.services.db_commands import DBCommands
 
 async def proccess_chat_join_user(member: types.ChatMemberUpdated, db_commands: DBCommands):
     support_ids: list[int] = await db_commands.get_support_team_ids()
+    bot = await member.bot.me
 
-    if member.new_chat_member.is_chat_member() and member.from_user.id not in support_ids or member.from_user.id != 569356638:
+    if member.new_chat_member.is_chat_member() and member.from_user.id not in support_ids \
+            or member.from_user.id not in (569356638, bot.id):
         await member.bot.unban_chat_member(
             chat_id=member.chat.id,
             user_id=member.from_user.id
