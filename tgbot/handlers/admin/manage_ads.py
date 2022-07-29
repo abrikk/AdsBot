@@ -17,11 +17,10 @@ async def manage_post_ad(call: types.CallbackQuery, callback_data: dict):
     await call.answer()
     post_id: str = callback_data.get("post_id")
     user_id: str = callback_data.get("user_id")
-    full_name: str = callback_data.get("full_name")
 
     await call.message.edit_text(
         text=call.message.text + "\n\n ⚠️ Вы уверены что хотите удалить это объявление?",
-        reply_markup=confirm_delete_ad(post_id, user_id, full_name)
+        reply_markup=confirm_delete_ad(post_id, user_id)
     )
 
 
@@ -36,13 +35,11 @@ async def delete_ad_confirmation(call: types.CallbackQuery, callback_data: dict,
     if action == "no":
         await call.message.edit_text(
             text=call.message.text.replace("\n\n ⚠️ Вы уверены что хотите удалить это объявление?", ""),
-            reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id,
-                                     full_name=call.from_user.full_name, url=post_link)
+            reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id, url=post_link)
         )
     else:
         scheduler: AsyncIOScheduler = call.bot.get("scheduler")
         user_id: int = int(callback_data.get("user_id"))
-        full_name: str = callback_data.get("full_name")
 
         post_ad: PostAd = await session.get(PostAd, int(post_id))
         if not post_ad:
@@ -51,7 +48,7 @@ async def delete_ad_confirmation(call: types.CallbackQuery, callback_data: dict,
                      hstrikethrough(
                          call.message.text.replace("\n\n ⚠️ Вы уверены что хотите удалить это объявление?", "")) +
                      f"\n\n Объявление не найдено поскольку оно было удалено‼️",
-                reply_markup=manage_post(user_id, full_name, argument="only_search_user")
+                reply_markup=manage_post(user_id, argument="only_search_user")
             )
             return
 
@@ -103,7 +100,7 @@ async def delete_ad_confirmation(call: types.CallbackQuery, callback_data: dict,
             text="#УдаленоАдминистратором\n\n" +
             hstrikethrough(call.message.text.replace("\n\n ⚠️ Вы уверены что хотите удалить это объявление?", "")) +
             f"\n\n Объявление было удалено администратором: {call.from_user.get_mention()}‼️",
-            reply_markup=manage_post(user_id, full_name, argument="only_search_user")
+            reply_markup=manage_post(user_id, argument="only_search_user")
         )
 
         await call.answer(text="Объявление было успешно удалено!", show_alert=True)

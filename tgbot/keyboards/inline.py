@@ -51,10 +51,10 @@ def join_link(bot_link: str, channel_link: str = None):
     return markup
 
 
-manage_cb = CallbackData("manage", "post_id", "user_id", "full_name")
+manage_cb = CallbackData("manage", "post_id", "user_id")
 
 
-def manage_post(user_id: int | str, full_name: str = None, post_id: int | str = None, url: str = None, argument: str = None):
+def manage_post(user_id: int | str, post_id: int | str = None, url: str = None, argument: str = None):
     markup = InlineKeyboardMarkup(row_width=1)
 
     if url:
@@ -69,31 +69,31 @@ def manage_post(user_id: int | str, full_name: str = None, post_id: int | str = 
         markup.add(
             InlineKeyboardButton(
                 text="Удалить объявление ❌",
-                callback_data=manage_cb.new(post_id=str(post_id), user_id=str(user_id), full_name=full_name)
+                callback_data=manage_cb.new(post_id=str(post_id), user_id=str(user_id))
             )
         )
     markup.add(
         InlineKeyboardButton(
             text="Управление пользователем ⚙️️",
-            switch_inline_query_current_chat=f"управление пользователем {full_name or user_id}: {user_id}"
+            switch_inline_query_current_chat=f"управление пользователем {user_id}: {user_id}"
         )
     )
     return markup
 
 
-confirm_cb = CallbackData("confirm", "post_id", "user_id", "full_name", "action")
+confirm_cb = CallbackData("confirm", "post_id", "user_id", "action")
 
 
-def confirm_delete_ad(post_id: str, user_id: str, full_name: str):
+def confirm_delete_ad(post_id: str, user_id: str):
     markup = InlineKeyboardMarkup()
     markup.add(
         InlineKeyboardButton(
             text="Да ✅",
-            callback_data=confirm_cb.new(post_id=post_id, user_id=user_id, full_name=full_name, action="yes")
+            callback_data=confirm_cb.new(post_id=post_id, user_id=user_id, action="yes")
         ),
         InlineKeyboardButton(
             text="Нет ❌",
-            callback_data=confirm_cb.new(post_id=post_id, user_id=user_id, full_name=full_name, action="no")
+            callback_data=confirm_cb.new(post_id=post_id, user_id=user_id, action="no")
         )
     )
     return markup

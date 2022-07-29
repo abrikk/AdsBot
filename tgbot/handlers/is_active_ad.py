@@ -70,7 +70,7 @@ async def up_ad(call: types.CallbackQuery, callback_data: dict,
                  f"так как пользователь посчитал что оно больше не актуально 📛",
             chat_id=config.chats.private_group_id,
             message_id=post_ad.admin_group_message_id,
-            reply_markup=manage_post(call.from_user.id, call.from_user.full_name, argument="only_search_user")
+            reply_markup=manage_post(call.from_user.id, argument="only_search_user")
         )
 
     else:
@@ -155,8 +155,7 @@ async def up_ad(call: types.CallbackQuery, callback_data: dict,
             chat_id=config.chats.private_group_id,
             message_id=post_ad.admin_group_message_id,
             text=ad.post(where="admin_group"),
-            reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id,
-                                     full_name=call.from_user.full_name, url=ad.post_link)
+            reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id,  url=ad.post_link)
         )
 
         channel = await call.bot.get_chat(config.chats.main_channel_id)
