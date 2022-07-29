@@ -20,7 +20,6 @@ async def up_ad(call: types.CallbackQuery, callback_data: dict,
     bot = call.bot
     scheduler: AsyncIOScheduler = call.bot.get('scheduler')
     post_id = int(callback_data.get('post_id'))
-    scheduler.remove_job(job_id=f"check_{post_id}")
 
     action = callback_data.get('action')
     post_ad: PostAd = await session.get(PostAd, post_id)
@@ -33,6 +32,8 @@ async def up_ad(call: types.CallbackQuery, callback_data: dict,
             reply_markup=None
         )
         return
+
+    scheduler.remove_job(job_id=f"check_{post_id}")
 
     channel = await call.bot.get_chat(config.chats.main_channel_id)
     post_link: str = make_link_to_post(channel_username=channel.username, post_id=post_id)

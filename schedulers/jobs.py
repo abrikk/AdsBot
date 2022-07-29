@@ -69,7 +69,7 @@ async def ask_if_active(user_id: int, post_id: int, channel_username: str, chann
         logging.warning(exc)
         return
 
-    time_to_check = datetime.datetime.now(tz=pytz.timezone(TIMEZONE)) + datetime.timedelta(hours=12, minutes=30)
+    time_to_check = datetime.datetime.now(tz=pytz.timezone(TIMEZONE)) + datetime.timedelta(seconds=15)
     scheduler.add_job(
         check_if_active,
         trigger=DateTrigger(time_to_check, timezone=TIMEZONE),
@@ -102,13 +102,16 @@ async def check_if_active(user_id: int, post_id: int, channel_id: int, private_g
         await session.delete(post_ad)
         await session.commit()
 
-        await bot.send_message(
-            chat_id=user_id,
-            text=f"Ваше объявление было удалено из канала, поскольку вы "
-                 f"не подтвердили его актуальность.",
-            reply_to_message_id=ask_message_id,
-            reply_markup=None
-        )
+        try:
+            await bot.send_message(
+                chat_id=user_id,
+                text=f"Ваше объявление было удалено из канала, поскольку вы "
+                     f"не подтвердили его актуальность.",
+                reply_to_message_id=ask_message_id,
+                reply_markup=None
+            )
+        except BotBlocked as exc:
+            logging.warning(exc)
 
         await bot.edit_message_text(
             text=f"#УдаленоВременем\n\n"
