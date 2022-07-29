@@ -45,6 +45,16 @@ async def delete_ad_confirmation(call: types.CallbackQuery, callback_data: dict,
         full_name: str = callback_data.get("full_name")
 
         post_ad: PostAd = await session.get(PostAd, int(post_id))
+        if not post_ad:
+            await call.message.edit_text(
+                text="#ОбъявлениеНеНайдено\n\n" +
+                     hstrikethrough(
+                         call.message.text.replace("\n\n ⚠️ Вы уверены что хотите удалить это объявление?", "")) +
+                     f"\n\n Объявление не найдено поскольку оно было удалено‼️",
+                reply_markup=manage_post(user_id, full_name, argument="only_search_user")
+            )
+            return
+
         try:
             if post_ad.related_messages:
                 for message in post_ad.related_messages:
