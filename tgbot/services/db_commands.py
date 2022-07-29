@@ -206,4 +206,3 @@ class DBCommands:
         sql = select(func.count("*")).select_from(PostAd).where(options[condition])
         request = await self.session.execute(sql)
         return request.scalars().first()
-

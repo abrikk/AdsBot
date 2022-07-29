@@ -286,8 +286,7 @@ async def save_edit(call: types.CallbackQuery, _button: Button, manager: DialogM
             chat_id=config.chats.private_group_id,
             message_id=post_ad.admin_group_message_id,
             text=ad.post(where="admin_group"),
-            reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id,
-                                     full_name=call.from_user.full_name, url=ad.post_link)
+            reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id, url=ad.post_link)
         )
 
     await session.commit()

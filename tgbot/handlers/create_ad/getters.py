@@ -98,12 +98,13 @@ async def get_show_next(dialog_manager: DialogManager, **_kwargs):
 async def get_can_post(dialog_manager: DialogManager, **_kwargs):
     required_fields: set = {"description", "contacts"}
     create_action = dialog_manager.current_context().start_data.get("heading")
+    contacts = dialog_manager.current_context().widget_data.get("contacts")
 
     if create_action in ("sell", "rent"):
         required_fields.add("price")
 
     widget_data_keys: set = set(dialog_manager.current_context().widget_data.keys())
-    if required_fields.issubset(widget_data_keys):
+    if required_fields.issubset(widget_data_keys) and (contacts is not None) and len(contacts) > 0:
         return {"can_post": True}
     return {"can_post": False}
 
@@ -142,6 +143,7 @@ async def get_confirm_text(dialog_manager: DialogManager, **_kwargs):
 
 
 async def on_confirm(call: types.CallbackQuery, _button: Button, manager: DialogManager):
+    await call.answer(cache_time=60)
     scheduler = call.bot.get("scheduler")
     bot: Bot = call.bot
     session = manager.data.get("session")
