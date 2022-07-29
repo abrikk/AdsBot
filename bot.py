@@ -60,7 +60,7 @@ async def main():
     bot["scheduler"] = scheduler
 
     await on_startup_notify(bot, config)
-    await set_default_commands(bot, config)
+    await set_default_commands(bot)
 
     register_all_middlewares(dp, sessionmaker, config)
     register_all_filters(dp)

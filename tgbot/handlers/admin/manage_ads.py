@@ -1,7 +1,7 @@
 import logging
 
 from aiogram import types, Dispatcher
-from aiogram.utils.exceptions import MessageToDeleteNotFound
+from aiogram.utils.exceptions import MessageToDeleteNotFound, BotBlocked
 from aiogram.utils.markdown import hstrikethrough
 from apscheduler.jobstores.base import JobLookupError
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -80,12 +80,15 @@ async def delete_ad_confirmation(call: types.CallbackQuery, callback_data: dict,
 
         await session.delete(post_ad)
         await session.commit()
+        try:
+            await call.bot.send_message(
+                chat_id=user_id,
+                text=post_delete_text,
+                disable_web_page_preview=True
+            )
+        except BotBlocked as exc:
+            logging.warning(exc)
 
-        await call.bot.send_message(
-            chat_id=user_id,
-            text=post_delete_text,
-            disable_web_page_preview=True
-        )
         await call.message.edit_text(
             text="#УдаленоАдминистратором\n\n" +
             hstrikethrough(call.message.text.replace("\n\n ⚠️ Вы уверены что хотите удалить это объявление?", "")) +

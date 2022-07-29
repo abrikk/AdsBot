@@ -4,7 +4,7 @@ from datetime import timedelta, datetime
 from typing import Any, Dict
 
 from aiogram import Dispatcher, types
-from aiogram.utils.exceptions import MessageToDeleteNotFound
+from aiogram.utils.exceptions import MessageToDeleteNotFound, BotBlocked
 from aiogram.utils.markdown import hcode
 from aiogram_dialog import DialogManager, Dialog, Window, StartMode
 from aiogram_dialog.widgets.input import TextInput
@@ -195,11 +195,14 @@ async def change_user_role(call: types.CallbackQuery, _widget: Any, manager: Dia
                        f"Если вы считаете это ошибка, пожалуйста, " \
                        f"обратитесь в поддержку: {support_mentions}"
 
-            await call.bot.send_message(
-                chat_id=user_id,
-                text=ban_text,
-                disable_web_page_preview=True
-            )
+            try:
+                await call.bot.send_message(
+                    chat_id=user_id,
+                    text=ban_text,
+                    disable_web_page_preview=True
+                )
+            except BotBlocked as exc:
+                logging.warning(exc)
 
             await call.answer("Пользователь был успешно заблокирован!")
 

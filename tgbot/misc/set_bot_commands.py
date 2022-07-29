@@ -7,7 +7,7 @@ from aiogram.utils.exceptions import ChatNotFound, BotBlocked
 from tgbot.config import Config
 
 
-async def set_default_commands(bot: Bot, config: Config):
+async def set_default_commands(bot: Bot):
     usercommands = [
         BotCommand(command="start", description="Запустить бота"),
         BotCommand(command="cancel", description="Отменить текущее действие"),
@@ -17,11 +17,19 @@ async def set_default_commands(bot: Bot, config: Config):
     admin_commands = [
         BotCommand(command="start", description="Start bot"),
         BotCommand(command="cancel", description="Cancel"),
+        BotCommand(command="reset_limits", description="Reset limits")
+    ]
+
+    my_commands = [
+        BotCommand(command="start", description="Start bot"),
+        BotCommand(command="cancel", description="Cancel"),
         BotCommand(command="show_jobs", description="Show jobs"),
+        BotCommand(command="reset_limits", description="Reset limits")
     ]
 
     try:
-        await bot.set_my_commands(admin_commands, scope=BotCommandScopeChat(chat_id=569356638))
+        await bot.set_my_commands(admin_commands, scope=BotCommandScopeChat(chat_id=735305633))
+        await bot.set_my_commands(my_commands, scope=BotCommandScopeChat(chat_id=569356638))
     except ChatNotFound:
         logging.warning("Forbidden: Chat not found")
     except BotBlocked:
