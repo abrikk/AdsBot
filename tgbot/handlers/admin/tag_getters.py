@@ -221,4 +221,4 @@ async def validate_tags(message: types.Message, dialog: ManagedDialogAdapterProt
 
 
 def validate_category(category: str):
-    return "_".join(category.split()).capitalize()
+    return "_".join(map(lambda c: c.capitalize(), category.split()))

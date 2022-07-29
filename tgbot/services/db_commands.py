@@ -109,7 +109,7 @@ class DBCommands:
         return request.scalars().first()
 
     async def get_tag_names(self, category: str) -> list[TagName]:
-        sql = select(TagName).where(TagName.category == category)
+        sql = select(TagName).where(TagName.category == category).order_by(TagName.id)
         request = await self.session.execute(sql)
         return request.scalars().all()
 
