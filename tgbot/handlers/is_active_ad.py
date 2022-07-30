@@ -4,6 +4,7 @@ from aiogram import types, Dispatcher
 from aiogram.types import MediaGroup
 from aiogram.utils.exceptions import MessageToDeleteNotFound
 from aiogram.utils.markdown import hstrikethrough
+from apscheduler.jobstores.base import JobLookupError
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from schedulers.functions import create_jobs
@@ -33,10 +34,12 @@ async def up_ad(call: types.CallbackQuery, callback_data: dict,
         )
         return
 
-    scheduler.remove_job(job_id=f"check_{post_id}")
+    try:
+        scheduler.remove_job(job_id=f"check_{post_id}")
+    except JobLookupError:
+        logging.warning("Job not found")
 
     channel = await call.bot.get_chat(config.chats.main_channel_id)
-    post_link: str = make_link_to_post(channel_username=channel.username, post_id=post_id)
 
     try:
         if post_ad.related_messages:
