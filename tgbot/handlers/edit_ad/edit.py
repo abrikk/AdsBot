@@ -90,6 +90,11 @@ async def edit_input(message: types.Message, _dialog: ManagedDialogAdapterProto,
         phone_number = message.text
         contact_data = widget_data.setdefault('contacts', post_ad.contacts.split(","))
 
+        if sum(list(map(lambda x: len(x), contact_data))) + len(phone_number) + len(contact_data) - 1 > 128:
+            manager.show_mode = ShowMode.EDIT
+            await message.answer("Слишком длинные контактные данные! Максимальная длина 128 символов.")
+            return
+
         if phone_number in contact_data:
             manager.show_mode = ShowMode.EDIT
             await message.answer("Этот номер уже имеется в объявлении.")
