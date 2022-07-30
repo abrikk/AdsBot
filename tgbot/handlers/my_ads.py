@@ -60,7 +60,7 @@ my_ads_dialog = Dialog(
             when="show_group"
         ),
         Start(
-            text=Const("Назад"),
+            text=Const("🔙 Назад"),
             id="back_to_main",
             state=Main.main,
             mode=StartMode.RESET_STACK

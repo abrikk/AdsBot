@@ -156,6 +156,11 @@ async def contact_validator(message: types.Message, _dialog: ManagedDialogAdapte
     phone_number = message.text
     contact_data = manager.current_context().widget_data.setdefault('contacts', [])
 
+    if sum(list(map(lambda x: len(x), contact_data))) + len(phone_number) + len(contact_data) - 1 > 128:
+        manager.show_mode = ShowMode.EDIT
+        await message.answer("Слишком длинные контактные данные! Максимальная длина 128 символов.")
+        return
+
     if phone_number in contact_data:
         manager.show_mode = ShowMode.EDIT
         await message.answer("Вы уже ввели этот номер.")

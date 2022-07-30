@@ -8,11 +8,11 @@ def confirm_post(post_id: int):
     markup = InlineKeyboardMarkup()
     markup.add(
         InlineKeyboardButton(
-            text="Да",
+            text="✅ Да",
             callback_data=conf_cb.new(post_id=str(post_id), action="yes")
         ),
         InlineKeyboardButton(
-            text="Нет",
+            text="❌ Нет",
             callback_data=conf_cb.new(post_id=str(post_id), action="no")
         )
     )

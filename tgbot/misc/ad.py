@@ -184,7 +184,7 @@ class Ad:
         return '\n\n'.join(post_list)
 
     def humanize_phone_numbers(self) -> str:
-        return ", ".join(self.contacts)
+        return ", ".join(map(hitalic, self.contacts))
 
     def make_tags(self) -> str:
         headings: dict = {

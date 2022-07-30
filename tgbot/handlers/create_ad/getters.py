@@ -143,7 +143,8 @@ async def get_confirm_text(dialog_manager: DialogManager, **_kwargs):
 
 
 async def on_confirm(call: types.CallbackQuery, _button: Button, manager: DialogManager):
-    await call.answer(cache_time=60)
+    await call.answer(text="Объявление было успешно опубликовано в канале!", cache_time=60)
+
     scheduler = call.bot.get("scheduler")
     bot: Bot = call.bot
     session = manager.data.get("session")
@@ -251,5 +252,4 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
     post_ad.admin_group_message_id = admin_group.message_id
     await session.commit()
 
-    await call.answer("Объявление было успешно опубликовано в канале!")
     await manager.start(Main.main, mode=StartMode.RESET_STACK)
