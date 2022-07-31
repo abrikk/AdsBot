@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 import pytz
-from aiogram.utils.markdown import hitalic, hcode, hbold
+from aiogram.utils.markdown import hitalic, hbold
 
 
 @dataclass
@@ -48,7 +48,7 @@ class Ad:
             negotiable: None = None
 
         tdescription = 'Описание товара или услуг'
-        tphoto = 'Фото (опционально)'
+        tphoto = 'Фото (не обязательно)'
         tcontact = 'Контактные данные'
         if self.state_class == "exchange":
             return (self.current_heading(where=where) +
@@ -59,7 +59,7 @@ class Ad:
             if self.state_class in ("sell", "rent"):
                 tprice = 'Цена'
             else:
-                tprice = 'Желаемая цена (опционально)'
+                tprice = 'Желаемая цена (не обязательно)'
 
             return (self.current_heading(where=where) +
                     f"1. {tdescription}: {description}\n"
@@ -147,6 +147,7 @@ class Ad:
             " со следующими данными?",
             f"Описание: {self.description}"
         ]
+
         if self.price and self.state_class not in ("sell", "rent"):
             confirm_list.append(f"Желаемая цена: {str(self.price) + ' ' + self.currency}")
         elif self.price:
@@ -155,6 +156,8 @@ class Ad:
         confirm_list.append(f"Контактные данные: {self.humanize_phone_numbers()}")
         if self.photos:
             confirm_list.append(f"Картинки: {len(self.photos)} шт")
+
+        confirm_list.append(f"‼️Нажимайте на кнопку «✅ Да» один раз‼️")
 
         return '\n\n'.join(confirm_list)
 

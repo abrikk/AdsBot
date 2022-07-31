@@ -12,7 +12,6 @@ from tgbot.models.user import User
 
 async def all_queries(query: types.InlineQuery, config: Config):
     bot = query.bot
-    print("all_queries")
 
     chat_id = config.chats.main_channel_id
     channel_username = (await bot.get_chat(chat_id)).username
