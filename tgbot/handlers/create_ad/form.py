@@ -122,7 +122,8 @@ async def pic_validator(message: types.Message, _dialog: ManagedDialogAdapterPro
             await message.answer("Вы ввели не валидную картинку! Попробуйте еще раз.")
 
 
-async def delete_pic(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
+async def delete_pic(call: types.CallbackQuery, _button: Button, manager: DialogManager):
+    await call.answer(cache_time=5)
     widget_data = manager.current_context().widget_data
     photos_id: dict = widget_data.get('photos', {})
     photos_id.pop(list(photos_id.keys())[-1], None)

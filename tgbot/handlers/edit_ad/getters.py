@@ -1,11 +1,11 @@
 from aiogram.types import MediaGroup
 from aiogram.utils.markdown import hitalic, hcode
-from aiogram_dialog import DialogManager, ShowMode
+from aiogram_dialog import DialogManager, ShowMode, StartMode
 
 from tgbot.config import Config
 from tgbot.handlers.create_ad.form import make_link_to_post
 from tgbot.misc.ad import Ad
-from tgbot.misc.states import MyAds
+from tgbot.misc.states import MyAds, Main
 from tgbot.models.post_ad import PostAd
 
 
@@ -46,6 +46,10 @@ async def get_edit_options(dialog_manager: DialogManager, **_kwargs):
     session = dialog_manager.data.get("session")
     post_id = dialog_manager.current_context().start_data.get("post_id")
     post_ad: PostAd = await session.get(PostAd, post_id)
+
+    if post_ad is None:
+        await dialog_manager.start(Main.main, mode=StartMode.RESET_STACK)
+        return
 
     if post_ad.post_type != "exchange" and post_ad.price is not None:
         edit_options.insert(1, ("price", "💱 Цена"))
