@@ -18,6 +18,8 @@ from tgbot.models.post_ad import PostAd
 
 async def up_ad(call: types.CallbackQuery, callback_data: dict,
                           config: Config, session):
+    await call.answer(text="Объявление было успешно обновлено в канале!", cache_time=60)
+
     bot = call.bot
     scheduler: AsyncIOScheduler = call.bot.get('scheduler')
     post_id = int(callback_data.get('post_id'))
@@ -144,8 +146,6 @@ async def up_ad(call: types.CallbackQuery, callback_data: dict,
 
         post_ad.post_id = post_id
         ad.post_link = make_link_to_post(channel_username=channel.username, post_id=post_id)
-
-        await call.answer(text="Объявление было успешно обновлено в канале!")
 
         await bot.edit_message_text(
             text=call.message.text + "\n\nОбъявление было успешно обновлено в канале!✅",

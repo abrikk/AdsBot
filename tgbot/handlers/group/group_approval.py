@@ -1,5 +1,3 @@
-import logging
-
 from aiogram import Dispatcher, types
 
 from tgbot.filters.is_group import IsGroup
