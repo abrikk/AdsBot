@@ -148,7 +148,7 @@ async def up_ad(call: types.CallbackQuery, callback_data: dict,
         ad.post_link = make_link_to_post(channel_username=channel.username, post_id=post_id)
 
         await bot.edit_message_text(
-            text=call.message.text + "\n\nОбъявление было успешно обновлено в канале!✅",
+            text=call.message.text or "" + "\n\nОбъявление было успешно обновлено в канале!✅",
             chat_id=call.from_user.id,
             message_id=call.message.message_id,
             reply_markup=show_posted_ad(ad.post_link)
