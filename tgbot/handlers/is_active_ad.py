@@ -100,8 +100,6 @@ async def up_ad(call: types.CallbackQuery, callback_data: dict,
             created_at=post_ad.created_at
         )
 
-
-
         storage_data: StorageData = bot.get("storage_data")
 
         async with LockManager(storage_data=storage_data, key=str(call.from_user.id)) as _lock:

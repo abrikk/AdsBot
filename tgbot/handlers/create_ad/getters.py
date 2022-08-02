@@ -115,7 +115,6 @@ async def get_confirm_text(dialog_manager: DialogManager, **_kwargs):
     start_data: dict = dialog_manager.current_context().start_data
     current_state: str = dialog_manager.current_context().state.state.split(":")[-1]
     state_class: str = start_data.get("state_class")
-    db: DBCommands = dialog_manager.data.get("db_commands")
 
     data: dict = copy.deepcopy(start_data)
 
@@ -129,36 +128,20 @@ async def get_confirm_text(dialog_manager: DialogManager, **_kwargs):
         **data
     )
 
-    storage_data: StorageData = dialog_manager.event.bot.get("storage_data")
+    if ad.photos:
+        current_page = start_data.setdefault('current_page', 1)
+    else:
+        current_page = None
 
-    async with LockManager(storage_data=storage_data, key=str(dialog_manager.event.from_user.id)) as _lock:
-        is_ad_exist = await db.is_ad_like_this_exist(
-            user_id=dialog_manager.event.from_user.id,
-            description=ad.description,
-            price=ad.price,
-            post_type=ad.state_class,
-            tag_category=ad.tag_category,
-            tag_name=ad.tag_name,
-            currency_code=ad.currency_code,
-        )
+    if len(ad.photos) > 1:
+        start_data['photos_len'] = len(ad.photos)
 
-        if is_ad_exist is not None:
-            return
-
-        if ad.photos:
-            current_page = start_data.setdefault('current_page', 1)
-        else:
-            current_page = None
-
-        if len(ad.photos) > 1:
-            start_data['photos_len'] = len(ad.photos)
-
-        return {
-            "final_text": ad.preview() if current_state == "preview" else ad.confirm(),
-            "file_id": get_current_file_id(list(ad.photos.values()), current_page),
-            "show_scroll": len(ad.photos) > 1,
-            "photo_text": len(ad.photos) > 1 and current_page and f"{current_page} фото"
-        }
+    return {
+        "final_text": ad.preview() if current_state == "preview" else ad.confirm(),
+        "file_id": get_current_file_id(list(ad.photos.values()), current_page),
+        "show_scroll": len(ad.photos) > 1,
+        "photo_text": len(ad.photos) > 1 and current_page and f"{current_page} фото"
+    }
 
 
 async def on_confirm(call: types.CallbackQuery, _button: Button, manager: DialogManager):
@@ -167,7 +150,9 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
     scheduler = call.bot.get("scheduler")
     bot: Bot = call.bot
     session = manager.data.get("session")
+    db: DBCommands = manager.data.get("db_commands")
     start_data = manager.current_context().start_data
+    storage_data: StorageData = bot.get("storage_data")
 
     state_class: str = start_data.get("state_class")
     config: Config = manager.data.get("config")
@@ -186,89 +171,103 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
         **data
     )
 
-    if len(ad.photos) > 1:
-        album = MediaGroup()
-
-        for file_id in list(ad.photos.values())[:-1]:
-            album.attach_photo(photo=file_id)
-
-        album.attach_photo(
-            photo=list(ad.photos.values())[-1],
-            caption=ad.post()
+    async with LockManager(storage_data=storage_data, key=str(call.from_user.id)) as _lock:
+        is_ad_exist = await db.is_ad_like_this_exist(
+            user_id=call.from_user.id,
+            description=ad.description,
+            price=ad.price,
+            post_type=ad.state_class,
+            tag_category=ad.tag_category,
+            tag_name=ad.tag_name,
+            currency_code=ad.currency_code,
         )
 
-        sent_post = await bot.send_media_group(
-            chat_id=config.chats.main_channel_id,
-            media=album
-        )
+        if is_ad_exist is not None:
+            return
 
-    elif ad.photos:
-        sent_post = await bot.send_photo(
-            chat_id=config.chats.main_channel_id,
-            photo=list(ad.photos.values())[0],
-            caption=ad.post()
-        )
+        if len(ad.photos) > 1:
+            album = MediaGroup()
 
-    else:
-        sent_post = await bot.send_message(
-            chat_id=config.chats.main_channel_id,
-            text=ad.post()
-        )
+            for file_id in list(ad.photos.values())[:-1]:
+                album.attach_photo(photo=file_id)
 
-    if isinstance(sent_post, list):
-        post_id = sent_post[-1].message_id
-        message_ids = [
-            RelatedMessage(
+            album.attach_photo(
+                photo=list(ad.photos.values())[-1],
+                caption=ad.post()
+            )
+
+            sent_post = await bot.send_media_group(
+                chat_id=config.chats.main_channel_id,
+                media=album
+            )
+
+        elif ad.photos:
+            sent_post = await bot.send_photo(
+                chat_id=config.chats.main_channel_id,
+                photo=list(ad.photos.values())[0],
+                caption=ad.post()
+            )
+
+        else:
+            sent_post = await bot.send_message(
+                chat_id=config.chats.main_channel_id,
+                text=ad.post()
+            )
+
+        if isinstance(sent_post, list):
+            post_id = sent_post[-1].message_id
+            message_ids = [
+                RelatedMessage(
+                    post_id=post_id,
+                    message_id=message.message_id,
+                    photo_file_id=message.photo[-1].file_id,
+                    photo_file_unique_id=message.photo[-1].file_unique_id
+                ) for message in sent_post
+            ]
+
+        elif sent_post.photo:
+            post_id = sent_post.message_id
+            message_ids = [RelatedMessage(
                 post_id=post_id,
-                message_id=message.message_id,
-                photo_file_id=message.photo[-1].file_id,
-                photo_file_unique_id=message.photo[-1].file_unique_id
-            ) for message in sent_post
-        ]
+                message_id=sent_post.message_id,
+                photo_file_id=sent_post.photo[-1].file_id,
+                photo_file_unique_id=sent_post.photo[-1].file_unique_id
+            )]
 
-    elif sent_post.photo:
-        post_id = sent_post.message_id
-        message_ids = [RelatedMessage(
+        else:
+            post_id = sent_post.message_id
+            message_ids = []
+
+        post_ad: PostAd = PostAd(
             post_id=post_id,
-            message_id=sent_post.message_id,
-            photo_file_id=sent_post.photo[-1].file_id,
-            photo_file_unique_id=sent_post.photo[-1].file_unique_id
-        )]
-
-    else:
-        post_id = sent_post.message_id
-        message_ids = []
-
-    post_ad: PostAd = PostAd(
-        post_id=post_id,
-        post_type=state_class.lower(),
-        user_id=call.from_user.id,
-        tag_category=ad.tag_category,
-        tag_name=ad.tag_name,
-        description=ad.description,
-        price=ad.price,
-        contacts=",".join(ad.contacts),
-        currency_code=ad.currency_code,
-        negotiable=ad.negotiable,
-        related_messages=message_ids
-    )
-
-    session.add(post_ad)
-
-    channel = await call.bot.get_chat(config.chats.main_channel_id)
-    ad.post_link = make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id)
-    create_jobs(scheduler, call.from_user.id, post_ad.post_id, channel.id, config.chats.private_group_id, channel.username)
-
-    admin_group = await bot.send_message(
-        chat_id=config.chats.private_group_id,
-        text=ad.post(where="admin_group"),
-        reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id, url=ad.post_link)
+            post_type=state_class.lower(),
+            user_id=call.from_user.id,
+            tag_category=ad.tag_category,
+            tag_name=ad.tag_name,
+            description=ad.description,
+            price=ad.price,
+            contacts=",".join(ad.contacts),
+            currency_code=ad.currency_code,
+            negotiable=ad.negotiable,
+            related_messages=message_ids
         )
 
-    user: User = await session.get(User, call.from_user.id)
-    user.posted_today += 1
+        session.add(post_ad)
 
-    post_ad.admin_group_message_id = admin_group.message_id
-    await session.commit()
+        channel = await call.bot.get_chat(config.chats.main_channel_id)
+        ad.post_link = make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id)
+        create_jobs(scheduler, call.from_user.id, post_ad.post_id, channel.id, config.chats.private_group_id, channel.username)
 
-    await manager.start(Main.main, mode=StartMode.RESET_STACK)
+        admin_group = await bot.send_message(
+            chat_id=config.chats.private_group_id,
+            text=ad.post(where="admin_group"),
+            reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id, url=ad.post_link)
+            )
+
+        user: User = await session.get(User, call.from_user.id)
+        user.posted_today += 1
+
+        post_ad.admin_group_message_id = admin_group.message_id
+        await session.commit()
+
+        await manager.start(Main.main, mode=StartMode.RESET_STACK)
