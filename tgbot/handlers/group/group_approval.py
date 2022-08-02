@@ -1,26 +1,10 @@
-import logging
-
 from aiogram import Dispatcher, types
 
-from tgbot.config import Config
 from tgbot.filters.is_group import IsGroup
 from tgbot.services.db_commands import DBCommands
 
 
-async def proccess_chat_join_user(member: types.ChatMemberUpdated, db_commands: DBCommands, config: Config):
-    text = (f"getting update in func proccess_chat_join_user"
-            f"member: {member}"
-            f"member: {member.new_chat_member.is_chat_member()}"
-            f"chat id : {member.chat.id}")
-    bot = member.bot
-    await bot.send_message(
-        chat_id=config.chats.errors_channel_id,
-        text=text
-    )
-    # logging.info("getting update in func proccess_chat_join_user")
-    # logging.info(f"member: {member}")
-    # logging.info(f"member: {member.new_chat_member.is_chat_member()}")
-    # logging.info(f"chat id : {member.chat.id}")
+async def proccess_chat_join_user(member: types.ChatMemberUpdated, db_commands: DBCommands):
     support_ids: list[int] = await db_commands.get_support_team_ids()
     bot = await member.bot.me
 
@@ -33,7 +17,6 @@ async def proccess_chat_join_user(member: types.ChatMemberUpdated, db_commands: 
 
 
 async def clean_chat_member_updated(message: types.Message):
-    logging.info("getting update in func clean_chat_member_updated")
     await message.delete()
 
 
