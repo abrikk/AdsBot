@@ -4,6 +4,8 @@ from aiogram import types, Bot
 from aiogram.types import MediaGroup
 from aiogram_dialog import DialogManager, StartMode
 from aiogram_dialog.widgets.kbd import Button
+from aiopriman.manager import LockManager
+from aiopriman.storage import StorageData
 
 from schedulers.functions import create_jobs
 from tgbot.config import Config
@@ -113,6 +115,7 @@ async def get_confirm_text(dialog_manager: DialogManager, **_kwargs):
     start_data: dict = dialog_manager.current_context().start_data
     current_state: str = dialog_manager.current_context().state.state.split(":")[-1]
     state_class: str = start_data.get("state_class")
+    db: DBCommands = dialog_manager.data.get("db_commands")
 
     data: dict = copy.deepcopy(start_data)
 
@@ -126,20 +129,36 @@ async def get_confirm_text(dialog_manager: DialogManager, **_kwargs):
         **data
     )
 
-    if ad.photos:
-        current_page = start_data.setdefault('current_page', 1)
-    else:
-        current_page = None
+    is_ad_exist = await db.is_ad_like_this_exist(
+        user_id=dialog_manager.event.from_user.id,
+        description=ad.description,
+        price=ad.price,
+        post_type=ad.state_class,
+        tag_category=ad.tag_category,
+        tag_name=ad.tag_name,
+        currency_code=ad.currency_code,
+    )
 
-    if len(ad.photos) > 1:
-        start_data['photos_len'] = len(ad.photos)
+    if is_ad_exist is not None:
+        return
 
-    return {
-        "final_text": ad.preview() if current_state == "preview" else ad.confirm(),
-        "file_id": get_current_file_id(list(ad.photos.values()), current_page),
-        "show_scroll": len(ad.photos) > 1,
-        "photo_text": len(ad.photos) > 1 and current_page and f"{current_page} фото"
-    }
+    storage_data: StorageData = dialog_manager.event.bot.get("storage_data")
+
+    async with LockManager(storage_data=storage_data, key=str(dialog_manager.event.from_user.id)) as _lock:
+        if ad.photos:
+            current_page = start_data.setdefault('current_page', 1)
+        else:
+            current_page = None
+
+        if len(ad.photos) > 1:
+            start_data['photos_len'] = len(ad.photos)
+
+        return {
+            "final_text": ad.preview() if current_state == "preview" else ad.confirm(),
+            "file_id": get_current_file_id(list(ad.photos.values()), current_page),
+            "show_scroll": len(ad.photos) > 1,
+            "photo_text": len(ad.photos) > 1 and current_page and f"{current_page} фото"
+        }
 
 
 async def on_confirm(call: types.CallbackQuery, _button: Button, manager: DialogManager):

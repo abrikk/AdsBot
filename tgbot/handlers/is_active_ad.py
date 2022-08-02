@@ -84,8 +84,6 @@ async def up_ad(call: types.CallbackQuery, callback_data: dict,
         await session.commit()
 
     else:
-        storage_data: StorageData = bot.get("storage_data")
-
         ad: Ad = Ad(
             state_class=post_ad.post_type,
             tag_category=post_ad.tag_category,
@@ -114,6 +112,8 @@ async def up_ad(call: types.CallbackQuery, callback_data: dict,
 
         if is_ad_exist is not None:
             return
+
+        storage_data: StorageData = bot.get("storage_data")
 
         async with LockManager(storage_data=storage_data, key=str(call.from_user.id)) as _lock:
             if len(ad.photos) > 1:
@@ -185,7 +185,7 @@ async def up_ad(call: types.CallbackQuery, callback_data: dict,
             create_jobs(scheduler, call.from_user.id, post_ad.post_id, channel.id, config.chats.private_group_id,
                         channel.username)
 
-        await session.commit()
+            await session.commit()
 
 
 def register_ad_status_handler(dp: Dispatcher):
