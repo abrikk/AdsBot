@@ -1,4 +1,5 @@
 import copy
+import logging
 from typing import Dict, Any
 
 from aiogram import types
@@ -126,7 +127,10 @@ async def delete_pic(call: types.CallbackQuery, _button: Button, manager: Dialog
     await call.answer(cache_time=5)
     widget_data = manager.current_context().widget_data
     photos_id: dict = widget_data.get('photos', {})
-    photos_id.pop(list(photos_id.keys())[-1], None)
+    try:
+        photos_id.pop(list(photos_id.keys())[-1], None)
+    except IndexError:
+        logging.warning("Too many clicks on delete button")
 
 
 async def price_validator(message: types.Message, dialog: ManagedDialogAdapterProto, manager: DialogManager):
@@ -174,7 +178,10 @@ async def contact_validator(message: types.Message, _dialog: ManagedDialogAdapte
 
 
 async def delete_contact(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
-    manager.current_context().widget_data.get("contacts").pop()
+    try:
+        manager.current_context().widget_data.get("contacts").pop()
+    except IndexError:
+        logging.warning("Too many clicks on delete button")
 
 
 async def request_confirmation(_call: types.CallbackQuery, _button: Button, manager: DialogManager):
