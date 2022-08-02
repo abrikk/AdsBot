@@ -100,22 +100,24 @@ async def up_ad(call: types.CallbackQuery, callback_data: dict,
             created_at=post_ad.created_at
         )
 
-        is_ad_exist = await db_commands.is_ad_like_this_exist(
-            user_id=call.from_user.id,
-            description=ad.description,
-            price=ad.price,
-            post_type=ad.state_class,
-            tag_category=ad.tag_category,
-            tag_name=ad.tag_name,
-            currency_code=ad.currency_code,
-        )
 
-        if is_ad_exist is not None:
-            return
 
         storage_data: StorageData = bot.get("storage_data")
 
         async with LockManager(storage_data=storage_data, key=str(call.from_user.id)) as _lock:
+            is_ad_exist = await db_commands.is_ad_like_this_exist(
+                user_id=call.from_user.id,
+                description=ad.description,
+                price=ad.price,
+                post_type=ad.state_class,
+                tag_category=ad.tag_category,
+                tag_name=ad.tag_name,
+                currency_code=ad.currency_code,
+            )
+
+            if is_ad_exist is not None:
+                return
+
             if len(ad.photos) > 1:
                 album = MediaGroup()
 

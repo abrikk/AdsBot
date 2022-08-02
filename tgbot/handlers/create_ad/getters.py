@@ -129,22 +129,22 @@ async def get_confirm_text(dialog_manager: DialogManager, **_kwargs):
         **data
     )
 
-    is_ad_exist = await db.is_ad_like_this_exist(
-        user_id=dialog_manager.event.from_user.id,
-        description=ad.description,
-        price=ad.price,
-        post_type=ad.state_class,
-        tag_category=ad.tag_category,
-        tag_name=ad.tag_name,
-        currency_code=ad.currency_code,
-    )
-
-    if is_ad_exist is not None:
-        return
-
     storage_data: StorageData = dialog_manager.event.bot.get("storage_data")
 
     async with LockManager(storage_data=storage_data, key=str(dialog_manager.event.from_user.id)) as _lock:
+        is_ad_exist = await db.is_ad_like_this_exist(
+            user_id=dialog_manager.event.from_user.id,
+            description=ad.description,
+            price=ad.price,
+            post_type=ad.state_class,
+            tag_category=ad.tag_category,
+            tag_name=ad.tag_name,
+            currency_code=ad.currency_code,
+        )
+
+        if is_ad_exist is not None:
+            return
+
         if ad.photos:
             current_page = start_data.setdefault('current_page', 1)
         else:
