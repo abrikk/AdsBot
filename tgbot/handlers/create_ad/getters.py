@@ -196,6 +196,8 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
             text=ad.post()
         )
 
+    await call.answer(cache_time=60)
+
     if isinstance(sent_post, list):
         post_id = sent_post[-1].message_id
         message_ids = [
@@ -235,6 +237,8 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
     )
 
     session.add(post_ad)
+
+    await call.answer(cache_time=60)
 
     channel = await call.bot.get_chat(config.chats.main_channel_id)
     ad.post_link = make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id)
