@@ -170,7 +170,7 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
         state_class=state_class,
         **data
     )
-
+    
     async with LockManager(storage_data=storage_data, key=str(call.from_user.id)) as _lock:
         is_ad_exist = await db.is_ad_like_this_exist(
             user_id=call.from_user.id,

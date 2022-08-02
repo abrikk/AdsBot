@@ -1,3 +1,4 @@
+import datetime
 import logging
 
 from aiogram import types, Dispatcher
@@ -16,11 +17,10 @@ from tgbot.keyboards.inline import conf_cb, show_posted_ad, manage_post
 
 from tgbot.misc.ad import Ad
 from tgbot.models.post_ad import PostAd
-from tgbot.services.db_commands import DBCommands
 
 
 async def up_ad(call: types.CallbackQuery, callback_data: dict,
-                          config: Config, session, db_commands: DBCommands):
+                          config: Config, session):
     await call.answer(text="Объявление было успешно обновлено в канале!", cache_time=300)
 
     bot = call.bot
@@ -103,17 +103,8 @@ async def up_ad(call: types.CallbackQuery, callback_data: dict,
         storage_data: StorageData = bot.get("storage_data")
 
         async with LockManager(storage_data=storage_data, key=str(call.from_user.id)) as _lock:
-            is_ad_exist = await db_commands.is_ad_like_this_exist(
-                user_id=call.from_user.id,
-                description=ad.description,
-                price=ad.price,
-                post_type=ad.state_class,
-                tag_category=ad.tag_category,
-                tag_name=ad.tag_name,
-                currency_code=ad.currency_code,
-            )
-
-            if is_ad_exist is not None:
+            datetime_now = datetime.datetime.now(tz=datetime.timezone.utc)
+            if (datetime_now - post_ad.updated_at).total_seconds() < 10:
                 return
 
             if len(ad.photos) > 1:
