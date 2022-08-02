@@ -69,7 +69,6 @@ async def delete_ad_confirmation(call: types.CallbackQuery, callback_data: dict,
 
         try:
             scheduler.remove_job("ask_" + str(post_ad.post_id))
-            scheduler.remove_job("check_" + str(post_ad.post_id))
         except JobLookupError:
             logging.warning("Job not found")
 

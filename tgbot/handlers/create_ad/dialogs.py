@@ -134,7 +134,7 @@ form_dialog = Dialog(
 
     Window(
         Button(
-            text=Const("Удалить фото"),
+            text=Const("❌ Удалить фото"),
             id="delete_pic",
             when=pic_exist,
             on_click=delete_pic
@@ -178,7 +178,7 @@ form_dialog = Dialog(
 
     Window(
         Button(
-            text=Const("Удалить контакт"),
+            text=Const("❌ Удалить контакт"),
             id="delete_contact",
             when=contact_exist,
             on_click=delete_contact

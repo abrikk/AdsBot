@@ -22,6 +22,7 @@ from tgbot.models.restriction import Restriction
 
 
 async def edit_input(message: types.Message, _dialog: ManagedDialogAdapterProto, manager: DialogManager):
+
     widget_data = manager.current_context().widget_data
     edit: str = manager.current_context().widget_data.get("edit")
     text = message.text
@@ -29,6 +30,9 @@ async def edit_input(message: types.Message, _dialog: ManagedDialogAdapterProto,
     session = manager.data.get("session")
     post_id = start_data.get("post_id")
     post_ad: PostAd = await session.get(PostAd, post_id)
+
+    if post_ad is None:
+        return
 
     if edit == "description":
         if len(text) > 1024:
@@ -126,6 +130,9 @@ async def delete_post_ad(call: types.CallbackQuery, _button: Button, manager: Di
     post_id = int(start_data.get("post_id"))
     post_ad: PostAd = await session.get(PostAd, post_id)
 
+    if not post_ad:
+        return
+
     try:
         if post_ad.related_messages:
             for message in post_ad.related_messages:
@@ -163,8 +170,18 @@ async def delete_post_ad(call: types.CallbackQuery, _button: Button, manager: Di
     await manager.start(MyAds.show, mode=StartMode.RESET_STACK)
 
 
-async def save_edit_option(_call: types.CallbackQuery, _widget: ManagedWidgetAdapter[Select], manager: DialogManager,
+async def save_edit_option(call: types.CallbackQuery, _widget: ManagedWidgetAdapter[Select], manager: DialogManager,
                            option: str):
+    start_data = manager.current_context().start_data
+    post_id = int(start_data.get("post_id"))
+    session = manager.data.get("session")
+    post_ad: PostAd = await session.get(PostAd, post_id)
+
+    if post_ad is None:
+        await manager.start(MyAds.show, mode=StartMode.RESET_STACK)
+        await call.answer(text="Объявление не найдено!")
+        return
+
     manager.current_context().widget_data["edit"] = option
     if option == "price":
         session = manager.data.get("session")

@@ -11,9 +11,8 @@ from tgbot.handlers.create_ad.form import currency_selected, get_currency_data
 from tgbot.handlers.edit_ad.edit import edit_input, delete_item, delete_post_ad, save_edit_option, clear_data, \
     save_edit
 from tgbot.handlers.edit_ad.getters import get_edit_options, get_edit_text, get_show_my_ad_text, get_post_link, \
-    get_can_save_edit
+    get_can_save_edit, get_post_is_not_none
 from tgbot.misc.states import ShowMyAd, MyAds
-
 
 show_my_ad_dialog = Dialog(
     Window(
@@ -21,14 +20,17 @@ show_my_ad_dialog = Dialog(
         Url(
             text=Const("↪️ Перейти к объявлению"),
             url=Format("{url}"),
+            when="url"
         ),
         Next(
             text=Const("🛠 Редактировать"),
+            when="url"
         ),
         SwitchTo(
             text=Const("🗑 Удалить"),
             id="delete_post",
-            state=ShowMyAd.confirm_delete
+            state=ShowMyAd.confirm_delete,
+            when="url"
         ),
         Start(
             text=Const("🔙 Назад"),
@@ -38,7 +40,7 @@ show_my_ad_dialog = Dialog(
         ),
         disable_web_page_preview=True,
         state=ShowMyAd.true,
-        getter=get_show_my_ad_text
+        getter=[get_show_my_ad_text, get_post_is_not_none]
     ),
 
     Window(
@@ -54,7 +56,7 @@ show_my_ad_dialog = Dialog(
         ),
         Back(text=Const("⬅️ Назад")),
         state=ShowMyAd.show_edit,
-        getter=get_edit_options,
+        getter=[get_edit_options, get_post_is_not_none],
         preview_add_transitions=[Next()]
     ),
     Window(
@@ -106,7 +108,7 @@ show_my_ad_dialog = Dialog(
             content_types=[types.ContentType.TEXT, types.ContentType.PHOTO]
         ),
         state=ShowMyAd.edit,
-        getter=[get_can_save_edit, get_currency_data, get_edit_text],
+        getter=[get_can_save_edit, get_currency_data, get_edit_text, get_post_is_not_none],
         preview_add_transitions=[SwitchTo(Const(""), "hint", ShowMyAd.true)]
     ),
     Window(
@@ -125,7 +127,7 @@ show_my_ad_dialog = Dialog(
             )
         ),
         state=ShowMyAd.confirm_delete,
-        getter=get_post_link,
+        getter=[get_post_link, get_post_is_not_none],
         preview_add_transitions=[Start(Const(""), "hint", MyAds.show)]
     )
 )

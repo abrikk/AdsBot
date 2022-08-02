@@ -5,7 +5,7 @@ from aiogram_dialog import DialogManager, ShowMode, StartMode
 from tgbot.config import Config
 from tgbot.handlers.create_ad.form import make_link_to_post
 from tgbot.misc.ad import Ad
-from tgbot.misc.states import MyAds, Main
+from tgbot.misc.states import MyAds
 from tgbot.models.post_ad import PostAd
 
 
@@ -16,8 +16,10 @@ async def get_show_my_ad_text(dialog_manager: DialogManager, **_kwargs):
     config: Config = dialog_manager.data.get("config")
     post_id = start_data.get("post_id")
     post_ad: PostAd = await session.get(PostAd, post_id)
+
     if not post_ad:
-        await dialog_manager.switch_to(MyAds.show)
+        return {"preview_text": "Объявление не найдено! Вернитесь в главное меню. ⚠️️"}
+
     channel = await obj.bot.get_chat(config.chats.main_channel_id)
 
     ad: Ad = Ad(
@@ -43,13 +45,13 @@ async def get_edit_options(dialog_manager: DialogManager, **_kwargs):
         ("description", "📝 Описание"),
         ("contacts", "📞 Контакты"),
     ]
+
     session = dialog_manager.data.get("session")
     post_id = dialog_manager.current_context().start_data.get("post_id")
     post_ad: PostAd = await session.get(PostAd, post_id)
 
-    if post_ad is None:
-        await dialog_manager.start(Main.main, mode=StartMode.RESET_STACK)
-        return
+    if not post_ad:
+        return {"edit_options": []}
 
     if post_ad.post_type != "exchange" and post_ad.price is not None:
         edit_options.insert(1, ("price", "💱 Цена"))
@@ -81,6 +83,9 @@ async def get_edit_text(dialog_manager: DialogManager, **_kwargs):
     session = dialog_manager.data.get("session")
     post_id = dialog_manager.current_context().start_data.get("post_id")
     post_ad: PostAd = await session.get(PostAd, post_id)
+
+    if not post_ad:
+        return {"edit_text": "Объявление не найдено! Вернитесь в главное меню. ⚠️️"}
 
     if edit == "photos" and widget_data.setdefault("not_edited", True):
         widget_data["photos"] = {m.photo_file_unique_id: m.photo_file_id for m in post_ad.related_messages}
@@ -128,12 +133,15 @@ async def get_edit_text(dialog_manager: DialogManager, **_kwargs):
 
 
 async def get_can_save_edit(dialog_manager: DialogManager, **_kwargs) -> dict:
-
     widget_data = dialog_manager.current_context().widget_data
     edit: str = widget_data.get("edit")
     session = dialog_manager.data.get("session")
     post_id = dialog_manager.current_context().start_data.get("post_id")
     post_ad: PostAd = await session.get(PostAd, post_id)
+
+    if not post_ad:
+        return {}
+
     edit_options: dict = {
         "description": post_ad.description,
         "price": post_ad.price,
@@ -157,3 +165,16 @@ async def get_can_save_edit(dialog_manager: DialogManager, **_kwargs) -> dict:
             return {"can_save_edit": False}
 
     return {"can_save_edit": edit_options[edit] != updated_field}
+
+
+async def get_post_is_not_none(dialog_manager: DialogManager, **_kwargs) -> dict:
+    start_data = dialog_manager.current_context().start_data
+    post_id = int(start_data.get("post_id"))
+    session = dialog_manager.data.get("session")
+    post_ad: PostAd = await session.get(PostAd, post_id)
+
+    if post_ad is None:
+        await dialog_manager.start(MyAds.show, mode=StartMode.RESET_STACK)
+        await dialog_manager.event.answer(text="Объявление не найдено! Вернитесь в главное меню. ⚠")
+
+    return {}
