@@ -4,6 +4,8 @@ from aiogram import types, Dispatcher
 from aiogram.types import MediaGroup
 from aiogram.utils.exceptions import MessageToDeleteNotFound
 from aiogram.utils.markdown import hstrikethrough
+from aiopriman.manager import LockManager
+from aiopriman.storage import StorageData
 from apscheduler.jobstores.base import JobLookupError
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -14,11 +16,12 @@ from tgbot.keyboards.inline import conf_cb, show_posted_ad, manage_post
 
 from tgbot.misc.ad import Ad
 from tgbot.models.post_ad import PostAd
+from tgbot.services.db_commands import DBCommands
 
 
 async def up_ad(call: types.CallbackQuery, callback_data: dict,
-                          config: Config, session):
-    await call.answer(text="Объявление было успешно обновлено в канале!", cache_time=60)
+                          config: Config, session, db_commands: DBCommands):
+    await call.answer(text="Объявление было успешно обновлено в канале!", cache_time=300)
 
     bot = call.bot
     scheduler: AsyncIOScheduler = call.bot.get('scheduler')
@@ -78,7 +81,10 @@ async def up_ad(call: types.CallbackQuery, callback_data: dict,
             reply_markup=manage_post(call.from_user.id, argument="only_search_user")
         )
 
+        await session.commit()
+
     else:
+        storage_data: StorageData = bot.get("storage_data")
 
         ad: Ad = Ad(
             state_class=post_ad.post_type,
@@ -96,76 +102,90 @@ async def up_ad(call: types.CallbackQuery, callback_data: dict,
             created_at=post_ad.created_at
         )
 
-        if len(ad.photos) > 1:
-            album = MediaGroup()
+        is_ad_exist = await db_commands.is_ad_like_this_exist(
+            user_id=call.from_user.id,
+            description=ad.description,
+            price=ad.price,
+            post_type=ad.state_class,
+            tag_category=ad.tag_category,
+            tag_name=ad.tag_name,
+            currency_code=ad.currency_code,
+        )
 
-            for file_id in list(ad.photos.values())[:-1]:
-                album.attach_photo(photo=file_id)
+        if is_ad_exist is not None:
+            return
 
-            album.attach_photo(
-                photo=list(ad.photos.values())[-1],
-                caption=ad.post()
-            )
+        async with LockManager(storage_data=storage_data, key=str(call.from_user.id)) as _lock:
+            if len(ad.photos) > 1:
+                album = MediaGroup()
 
-            sent_post = await bot.send_media_group(
-                chat_id=config.chats.main_channel_id,
-                media=album
-            )
+                for file_id in list(ad.photos.values())[:-1]:
+                    album.attach_photo(photo=file_id)
 
-        elif ad.photos:
-            sent_post = await bot.send_photo(
-                chat_id=config.chats.main_channel_id,
-                photo=list(ad.photos.values())[0],
-                caption=ad.post()
-            )
+                album.attach_photo(
+                    photo=list(ad.photos.values())[-1],
+                    caption=ad.post()
+                )
 
-        else:
-            sent_post = await bot.send_message(
-                chat_id=config.chats.main_channel_id,
-                text=ad.post()
-            )
+                sent_post = await bot.send_media_group(
+                    chat_id=config.chats.main_channel_id,
+                    media=album
+                )
 
-        if isinstance(sent_post, list):
-            post_id = sent_post[-1].message_id
-            for message, related_message in zip(sent_post, post_ad.related_messages):
+            elif ad.photos:
+                sent_post = await bot.send_photo(
+                    chat_id=config.chats.main_channel_id,
+                    photo=list(ad.photos.values())[0],
+                    caption=ad.post()
+                )
+
+            else:
+                sent_post = await bot.send_message(
+                    chat_id=config.chats.main_channel_id,
+                    text=ad.post()
+                )
+
+            if isinstance(sent_post, list):
+                post_id = sent_post[-1].message_id
+                for message, related_message in zip(sent_post, post_ad.related_messages):
+                    related_message.post_id = post_id
+                    related_message.message_id = message.message_id
+                    related_message.photo_file_id = message.photo[-1].file_id
+                    related_message.photo_file_unique_id = message.photo[-1].file_unique_id
+
+            elif sent_post.photo:
+                post_id = sent_post.message_id
+                related_message = post_ad.related_messages[0]
                 related_message.post_id = post_id
-                related_message.message_id = message.message_id
-                related_message.photo_file_id = message.photo[-1].file_id
-                related_message.photo_file_unique_id = message.photo[-1].file_unique_id
+                related_message.message_id = sent_post.message_id
+                related_message.photo_file_id = sent_post.photo[-1].file_id
+                related_message.photo_file_unique_id = sent_post.photo[-1].file_unique_id
 
-        elif sent_post.photo:
-            post_id = sent_post.message_id
-            related_message = post_ad.related_messages[0]
-            related_message.post_id = post_id
-            related_message.message_id = sent_post.message_id
-            related_message.photo_file_id = sent_post.photo[-1].file_id
-            related_message.photo_file_unique_id = sent_post.photo[-1].file_unique_id
+            else:
+                post_id = sent_post.message_id
 
-        else:
-            post_id = sent_post.message_id
+            post_ad.post_id = post_id
+            ad.post_link = make_link_to_post(channel_username=channel.username, post_id=post_id)
 
-        post_ad.post_id = post_id
-        ad.post_link = make_link_to_post(channel_username=channel.username, post_id=post_id)
+            await bot.edit_message_text(
+                text=call.message.text or "" + "\n\nОбъявление было успешно обновлено в канале!✅",
+                chat_id=call.from_user.id,
+                message_id=call.message.message_id,
+                reply_markup=show_posted_ad(ad.post_link)
+            )
 
-        await bot.edit_message_text(
-            text=call.message.text or "" + "\n\nОбъявление было успешно обновлено в канале!✅",
-            chat_id=call.from_user.id,
-            message_id=call.message.message_id,
-            reply_markup=show_posted_ad(ad.post_link)
-        )
+            await bot.edit_message_text(
+                chat_id=config.chats.private_group_id,
+                message_id=post_ad.admin_group_message_id,
+                text=ad.post(where="admin_group"),
+                reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id,  url=ad.post_link)
+            )
 
-        await bot.edit_message_text(
-            chat_id=config.chats.private_group_id,
-            message_id=post_ad.admin_group_message_id,
-            text=ad.post(where="admin_group"),
-            reply_markup=manage_post(post_id=post_id, user_id=call.from_user.id,  url=ad.post_link)
-        )
+            channel = await call.bot.get_chat(config.chats.main_channel_id)
+            create_jobs(scheduler, call.from_user.id, post_ad.post_id, channel.id, config.chats.private_group_id,
+                        channel.username)
 
-        channel = await call.bot.get_chat(config.chats.main_channel_id)
-        create_jobs(scheduler, call.from_user.id, post_ad.post_id, channel.id, config.chats.private_group_id,
-                    channel.username)
-
-    await session.commit()
+        await session.commit()
 
 
 def register_ad_status_handler(dp: Dispatcher):

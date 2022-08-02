@@ -206,3 +206,19 @@ class DBCommands:
         sql = select(func.count("*")).select_from(PostAd).where(options[condition])
         request = await self.session.execute(sql)
         return request.scalars().first()
+
+    async def is_ad_like_this_exist(self, user_id: int, description: str, tag_category: str, tag_name: str, price: int,
+                                    currency_code: str, post_type: str):
+        sql = select(PostAd).select_from(PostAd).where(
+            and_(
+                PostAd.user_id == user_id,
+                PostAd.description == description,
+                PostAd.tag_category == tag_category,
+                PostAd.tag_name == tag_name,
+                PostAd.price == price,
+                PostAd.currency_code == currency_code,
+                PostAd.post_type == post_type
+            )
+        )
+        request = await self.session.execute(sql)
+        return request.scalars().first()

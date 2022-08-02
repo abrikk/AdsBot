@@ -6,6 +6,7 @@ from aiogram.contrib.fsm_storage.redis import RedisStorage2
 from aiogram.types import AllowedUpdates
 from aiogram_dialog import DialogRegistry
 from apscheduler.triggers.cron import CronTrigger
+from aiopriman.storage import StorageData
 
 from schedulers.base import setup_scheduler
 from schedulers.jobs import reset_for_all_users
@@ -42,11 +43,14 @@ async def main():
     config: Config = load_config(".env")
 
     storage = RedisStorage2(host=config.redis_config.host)
+    storage_data = StorageData()
 
     bot = Bot(token=config.tg_bot.token, parse_mode='HTML')
     dp = Dispatcher(bot, storage=storage)
     sessionmaker = await create_db_session(config)
     registry = DialogRegistry(dp)
+
+    bot["storage_data"] = storage_data
 
     scheduler = setup_scheduler(bot=bot, config=config, storage=storage, session=sessionmaker)
     scheduler.start()
