@@ -21,88 +21,88 @@ from tgbot.models.post_ad import PostAd
 
 async def up_ad(call: types.CallbackQuery, callback_data: dict,
                           config: Config, session):
-    await call.answer(text="Объявление было успешно обновлено в канале!", cache_time=300)
-
     bot = call.bot
-    scheduler: AsyncIOScheduler = call.bot.get('scheduler')
-    post_id = int(callback_data.get('post_id'))
+    storage_data: StorageData = bot.get("storage_data")
+    async with LockManager(storage_data=storage_data, key=str(call.from_user.id)) as _lock:
 
-    action = callback_data.get('action')
-    post_ad: PostAd = await session.get(PostAd, post_id)
+        await call.answer(text="Объявление было успешно обновлено в канале!", cache_time=300)
 
-    if post_ad is None:
-        await bot.edit_message_text(
-            text=hstrikethrough(call.message.text) + "\n\nОбъявление было удалено!⚠️",
-            chat_id=call.from_user.id,
-            message_id=call.message.message_id,
-            reply_markup=None
-        )
-        return
+        scheduler: AsyncIOScheduler = call.bot.get('scheduler')
+        post_id = int(callback_data.get('post_id'))
 
-    try:
-        scheduler.remove_job(job_id=f"check_{post_id}")
-    except JobLookupError:
-        logging.warning("Job not found")
+        action = callback_data.get('action')
+        post_ad: PostAd = await session.get(PostAd, post_id)
 
-    channel = await call.bot.get_chat(config.chats.main_channel_id)
+        if post_ad is None:
+            await bot.edit_message_text(
+                text=hstrikethrough(call.message.text) + "\n\nОбъявление было удалено!⚠️",
+                chat_id=call.from_user.id,
+                message_id=call.message.message_id,
+                reply_markup=None
+            )
+            return
 
-    try:
-        if post_ad.related_messages:
-            for message in post_ad.related_messages:
+        try:
+            scheduler.remove_job(job_id=f"check_{post_id}")
+        except JobLookupError:
+            logging.warning("Job not found")
+
+        channel = await call.bot.get_chat(config.chats.main_channel_id)
+
+        try:
+            if post_ad.related_messages:
+                for message in post_ad.related_messages:
+                    await bot.delete_message(
+                        chat_id=config.chats.main_channel_id,
+                        message_id=message.message_id
+                    )
+            else:
                 await bot.delete_message(
                     chat_id=config.chats.main_channel_id,
-                    message_id=message.message_id
+                    message_id=post_ad.post_id
                 )
-        else:
-            await bot.delete_message(
-                chat_id=config.chats.main_channel_id,
-                message_id=post_ad.post_id
+        except MessageToDeleteNotFound:
+            logging.warning("Message to delete not found")
+
+        if action == "no":
+            await session.delete(post_ad)
+            await call.message.answer("Ваше объявление было удалено, поскольку оно больше не актуально.")
+
+            await bot.edit_message_text(
+                text=call.message.text + "\n\nОбъявление было удалено в канале!⚠️",
+                chat_id=call.from_user.id,
+                message_id=call.message.message_id,
+                reply_markup=None
             )
-    except MessageToDeleteNotFound:
-        logging.warning("Message to delete not found")
 
-    if action == "no":
-        await session.delete(post_ad)
-        await call.message.answer("Ваше объявление было удалено, поскольку оно больше не актуально.")
+            await bot.edit_message_text(
+                text=f"#НеАктуальноеОбъявление\n\n"
+                     f"Объявление пользователя c идентификатором <code>{call.from_user.id}</code> было удалено с канала, "
+                     f"так как пользователь посчитал что оно больше не актуально 📛",
+                chat_id=config.chats.private_group_id,
+                message_id=post_ad.admin_group_message_id,
+                reply_markup=manage_post(call.from_user.id, argument="only_search_user")
+            )
 
-        await bot.edit_message_text(
-            text=call.message.text + "\n\nОбъявление было удалено в канале!⚠️",
-            chat_id=call.from_user.id,
-            message_id=call.message.message_id,
-            reply_markup=None
-        )
+            await session.commit()
 
-        await bot.edit_message_text(
-            text=f"#НеАктуальноеОбъявление\n\n"
-                 f"Объявление пользователя c идентификатором <code>{call.from_user.id}</code> было удалено с канала, "
-                 f"так как пользователь посчитал что оно больше не актуально 📛",
-            chat_id=config.chats.private_group_id,
-            message_id=post_ad.admin_group_message_id,
-            reply_markup=manage_post(call.from_user.id, argument="only_search_user")
-        )
+        else:
+            ad: Ad = Ad(
+                state_class=post_ad.post_type,
+                tag_category=post_ad.tag_category,
+                tag_name=post_ad.tag_name,
+                description=post_ad.description,
+                price=post_ad.price,
+                contacts=post_ad.contacts.split(","),
+                currency_code=post_ad.currency_code,
+                negotiable=post_ad.negotiable,
+                photos={m.photo_file_unique_id: m.photo_file_id for m in post_ad.related_messages} if post_ad.related_messages else {},
+                mention=call.from_user.get_mention(),
+                post_link=make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id),
+                updated_at=post_ad.updated_at,
+                created_at=post_ad.created_at
+            )
 
-        await session.commit()
-
-    else:
-        ad: Ad = Ad(
-            state_class=post_ad.post_type,
-            tag_category=post_ad.tag_category,
-            tag_name=post_ad.tag_name,
-            description=post_ad.description,
-            price=post_ad.price,
-            contacts=post_ad.contacts.split(","),
-            currency_code=post_ad.currency_code,
-            negotiable=post_ad.negotiable,
-            photos={m.photo_file_unique_id: m.photo_file_id for m in post_ad.related_messages} if post_ad.related_messages else {},
-            mention=call.from_user.get_mention(),
-            post_link=make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id),
-            updated_at=post_ad.updated_at,
-            created_at=post_ad.created_at
-        )
-
-        storage_data: StorageData = bot.get("storage_data")
-
-        async with LockManager(storage_data=storage_data, key=str(call.from_user.id)) as _lock:
             datetime_now = datetime.datetime.now(tz=datetime.timezone.utc)
             if (datetime_now - post_ad.updated_at).total_seconds() < 10:
                 return
