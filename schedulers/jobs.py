@@ -27,6 +27,23 @@ async def ask_if_active(user_id: int, post_id: int, channel_username: str, chann
             disable_web_page_preview=False
         )
 
+        post_ad: PostAd = await session.get(PostAd, post_id)
+
+        try:
+            if post_ad.related_messages:
+                for message in post_ad.related_messages:
+                    await bot.delete_message(
+                        chat_id=channel_id,
+                        message_id=message.message_id
+                    )
+            else:
+                await bot.delete_message(
+                    chat_id=channel_id,
+                    message_id=post_ad.post_id
+                )
+        except MessageToDeleteNotFound:
+            logging.warning("Message to delete not found")
+
     except BotBlocked as exc:
         async with session() as session:
             post_ids: list[int] = await session.execute(select(PostAd.post_id).where(PostAd.user_id == user_id))

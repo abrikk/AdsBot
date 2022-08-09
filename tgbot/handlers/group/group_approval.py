@@ -1,4 +1,5 @@
 from aiogram import Dispatcher, types
+from aiogram.utils.exceptions import MessageCantBeDeleted
 
 from tgbot.filters.is_group import IsGroup
 from tgbot.services.db_commands import DBCommands
@@ -17,7 +18,10 @@ async def proccess_chat_join_user(member: types.ChatMemberUpdated, db_commands: 
 
 
 async def clean_chat_member_updated(message: types.Message):
-    await message.delete()
+    try:
+        await message.delete()
+    except MessageCantBeDeleted:
+        pass
 
 
 def register_group_approval(dp: Dispatcher):
