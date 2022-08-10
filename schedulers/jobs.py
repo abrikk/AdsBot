@@ -10,7 +10,7 @@ from apscheduler.triggers.date import DateTrigger
 from sqlalchemy import update, select
 from sqlalchemy.orm import sessionmaker
 
-from tgbot.constants import TIMEZONE
+from tgbot.constants import TIMEZONE, TIME_TO_CHECK
 from tgbot.handlers.create_ad.form import make_link_to_post
 from tgbot.keyboards.inline import confirm_post, manage_post
 from tgbot.models.post_ad import PostAd
@@ -86,7 +86,7 @@ async def ask_if_active(user_id: int, post_id: int, channel_username: str, chann
         logging.warning(exc)
         return
 
-    time_to_check = datetime.datetime.now(tz=pytz.timezone(TIMEZONE)) + datetime.timedelta(hours=24)
+    time_to_check = datetime.datetime.now(tz=pytz.timezone(TIMEZONE)) + TIME_TO_CHECK
     scheduler.add_job(
         check_if_active,
         trigger=DateTrigger(time_to_check, timezone=TIMEZONE),

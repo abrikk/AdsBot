@@ -1,12 +1,16 @@
 import operator
+from datetime import datetime
 
+import pytz
 from aiogram import types
 from aiogram_dialog import Dialog, Window, DialogManager, StartMode
 from aiogram_dialog.widgets.kbd import Select, ScrollingGroup, Group, Start
 from aiogram_dialog.widgets.managed import ManagedWidgetAdapter
 from aiogram_dialog.widgets.text import Format, Const
 
+from tgbot.constants import TIME_TO_ASK
 from tgbot.misc.states import MyAds, Main, ShowMyAd
+from tgbot.models.post_ad import PostAd
 from tgbot.services.db_commands import DBCommands
 
 
@@ -28,6 +32,11 @@ async def get_my_ads_text(dialog_manager: DialogManager, **_kwargs):
 
 async def show_chosen_ad(_call: types.CallbackQuery, _widget: ManagedWidgetAdapter[Select], manager: DialogManager,
                          post_id: str):
+    session = manager.data.get("session")
+    post_ad: PostAd = await session.get(PostAd, int(post_id))
+    if not (post_ad.created_at + TIME_TO_ASK > datetime.now(pytz.timezone("UTC"))):
+        return
+
     await manager.start(state=ShowMyAd.true, data={"post_id": int(post_id)})
 
 

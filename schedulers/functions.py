@@ -5,12 +5,12 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.date import DateTrigger
 
 from schedulers.jobs import ask_if_active
-from tgbot.constants import TIMEZONE
+from tgbot.constants import TIMEZONE, TIME_TO_ASK
 
 
 def create_jobs(scheduler: AsyncIOScheduler, user_id: int, post_id: int, channel_id: int, private_group_id: int,
                 channel_username: str):
-    time_to_ask = datetime.datetime.now(tz=pytz.timezone(TIMEZONE)) + datetime.timedelta(hours=47, minutes=30)
+    time_to_ask = datetime.datetime.now(tz=pytz.timezone(TIMEZONE)) + TIME_TO_ASK
 
     scheduler.add_job(
         ask_if_active,
