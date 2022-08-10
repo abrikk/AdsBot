@@ -3,6 +3,7 @@ import logging
 
 from aiogram import types, Dispatcher
 from aiogram.types import MediaGroup
+from aiogram.utils.exceptions import MessageNotModified
 from aiogram.utils.markdown import hstrikethrough
 from aiopriman.manager import LockManager
 from aiopriman.storage import StorageData
@@ -33,12 +34,15 @@ async def up_ad(call: types.CallbackQuery, callback_data: dict,
         post_ad: PostAd = await session.get(PostAd, post_id)
 
         if post_ad is None:
-            await bot.edit_message_text(
-                text=hstrikethrough(call.message.text) + "\n\nОбъявление было удалено!⚠️",
-                chat_id=call.from_user.id,
-                message_id=call.message.message_id,
-                reply_markup=None
-            )
+            try:
+                await bot.edit_message_text(
+                    text=hstrikethrough(call.message.text) + "\n\nОбъявление было удалено!⚠️",
+                    chat_id=call.from_user.id,
+                    message_id=call.message.message_id,
+                    reply_markup=None
+                )
+            except MessageNotModified:
+                pass
             return
 
         try:

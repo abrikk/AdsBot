@@ -3,7 +3,7 @@ from itertools import zip_longest
 
 from aiogram import types
 from aiogram.types import InputMedia
-from aiogram.utils.exceptions import MessageToDeleteNotFound
+from aiogram.utils.exceptions import MessageToDeleteNotFound, MessageCantBeDeleted
 from aiogram_dialog import DialogManager, StartMode
 from aiogram_dialog.manager.protocols import ManagedDialogAdapterProto, ShowMode
 from aiogram_dialog.widgets.kbd import Button, Select, Back
@@ -147,6 +147,8 @@ async def delete_post_ad(call: types.CallbackQuery, _button: Button, manager: Di
             )
     except MessageToDeleteNotFound:
         logging.warning("Message to delete not found")
+    except MessageCantBeDeleted:
+        pass
 
     try:
         scheduler.remove_job("ask_" + str(post_ad.post_id))
