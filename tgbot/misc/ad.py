@@ -4,6 +4,8 @@ from datetime import datetime
 import pytz
 from aiogram.utils.markdown import hitalic, hbold
 
+from tgbot.constants import TIMEZONE
+
 
 @dataclass
 class Ad:
@@ -203,8 +205,8 @@ class Ad:
         return " ".join([heading, category, tag])
 
     def make_datetime_text(self) -> str:
-        return f"Дата создания объявления: <code>{self.created_at.astimezone(pytz.timezone('Europe/Kiev')).strftime('%d.%m.%Y %H:%M:%S')}</code>\n" \
-               f"Последнее обновление: <code>{self.updated_at.astimezone(pytz.timezone('Europe/Kiev')).strftime('%d.%m.%Y %H:%M:%S')}</code>"
+        return f"Дата создания объявления: <code>{self.created_at.astimezone(tz=pytz.timezone(TIMEZONE)).strftime('%d.%m.%Y %H:%M:%S')}</code>\n" \
+               f"Последнее обновление: <code>{self.updated_at.astimezone(tz=pytz.timezone(TIMEZONE)).strftime('%d.%m.%Y %H:%M:%S')}</code>"
 
     @property
     def currency(self):

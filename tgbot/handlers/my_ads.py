@@ -8,7 +8,7 @@ from aiogram_dialog.widgets.kbd import Select, ScrollingGroup, Group, Start
 from aiogram_dialog.widgets.managed import ManagedWidgetAdapter
 from aiogram_dialog.widgets.text import Format, Const
 
-from tgbot.constants import TIME_TO_ASK
+from tgbot.constants import TIME_TO_ASK, UTC
 from tgbot.misc.states import MyAds, Main, ShowMyAd
 from tgbot.models.post_ad import PostAd
 from tgbot.services.db_commands import DBCommands
@@ -34,7 +34,7 @@ async def show_chosen_ad(_call: types.CallbackQuery, _widget: ManagedWidgetAdapt
                          post_id: str):
     session = manager.data.get("session")
     post_ad: PostAd = await session.get(PostAd, int(post_id))
-    if not (post_ad.created_at + TIME_TO_ASK > datetime.now(tz=pytz.timezone("UTC"))):
+    if not (post_ad.created_at.astimezone(tz=pytz.timezone(UTC)) + TIME_TO_ASK > datetime.now(tz=pytz.timezone(UTC))):
         return
 
     await manager.start(state=ShowMyAd.true, data={"post_id": int(post_id)})
