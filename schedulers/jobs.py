@@ -67,7 +67,6 @@ async def ask_if_active(user_id: int, post_id: int, channel_username: str, chann
                     logging.warning("Message to delete not found")
 
                 try:
-                    scheduler.remove_job("ask_" + str(post_ad.post_id))
                     scheduler.remove_job("check_" + str(post_ad.post_id))
                 except JobLookupError:
                     logging.warning("Job not found")
