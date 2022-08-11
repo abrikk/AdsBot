@@ -120,7 +120,7 @@ class DBCommands:
         ).where(
             and_(
                 PostAd.user_id == user_id,
-                PostAd.created_at + TIME_TO_ASK > datetime.now(tz=pytz.timezone(UTC))
+                PostAd.created_at + TIME_TO_ASK > datetime.now()
                  )
         ).order_by(PostAd.created_at)
         request = await self.session.execute(sql)
