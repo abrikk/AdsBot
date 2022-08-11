@@ -3,7 +3,7 @@ from datetime import datetime
 import pytz
 from sqlalchemy import select, or_, update, and_, func, String, extract
 
-from tgbot.constants import TIMEZONE, TIME_TO_ASK, UTC
+from tgbot.constants import TIMEZONE, TIME_TO_ASK
 from tgbot.models.post_ad import PostAd
 from tgbot.models.restriction import Restriction
 from tgbot.models.tag_category import TagCategory
@@ -121,7 +121,7 @@ class DBCommands:
             and_(
                 PostAd.user_id == user_id,
                 PostAd.created_at + TIME_TO_ASK > datetime.now()
-                 )
+            )
         ).order_by(PostAd.created_at)
         request = await self.session.execute(sql)
         return request.all()
