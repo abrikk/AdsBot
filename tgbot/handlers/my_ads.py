@@ -33,7 +33,7 @@ async def show_chosen_ad(_call: types.CallbackQuery, _widget: ManagedWidgetAdapt
                          post_id: str):
     session = manager.data.get("session")
     post_ad: PostAd = await session.get(PostAd, int(post_id))
-    if not (post_ad.created_at + TIME_TO_ASK > datetime.now()):
+    if not post_ad or not (post_ad.created_at + TIME_TO_ASK > datetime.now()):
         return
 
     await manager.start(state=ShowMyAd.true, data={"post_id": int(post_id)})
