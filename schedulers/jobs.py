@@ -44,6 +44,10 @@ async def ask_if_active(user_id: int, post_id: int, channel_username: str, chann
         except MessageToDeleteNotFound:
             logging.warning("Message to delete not found")
 
+        async with session() as session:
+            post_ad.updated_at = None
+            await session.commit()
+
     except BotBlocked as exc:
         async with session() as session:
             post_ids: list[int] = await session.execute(select(PostAd.post_id).where(PostAd.user_id == user_id))
@@ -81,7 +85,6 @@ async def ask_if_active(user_id: int, post_id: int, channel_username: str, chann
 
                 await session.delete(post_ad)
 
-            await session.commit()
         logging.warning(exc)
         return
 
