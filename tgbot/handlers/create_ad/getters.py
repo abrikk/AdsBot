@@ -256,7 +256,9 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
 
         channel = await call.bot.get_chat(config.chats.main_channel_id)
         ad.post_link = make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id)
-        create_jobs(scheduler, call.from_user.id, post_ad.post_id, channel.id, config.chats.private_group_id, channel.username)
+        create_jobs(scheduler=scheduler, user_id=call.from_user.id, post_id=post_ad.post_id,
+                    channel_id=channel.id, private_group_id=config.chats.private_group_id,
+                    channel_username=channel.username)
 
         admin_group = await bot.send_message(
             chat_id=config.chats.private_group_id,
