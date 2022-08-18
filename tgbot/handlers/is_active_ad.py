@@ -3,7 +3,7 @@ import logging
 
 from aiogram import types, Dispatcher
 from aiogram.types import MediaGroup
-from aiogram.utils.exceptions import MessageNotModified, MessageToDeleteNotFound
+from aiogram.utils.exceptions import MessageNotModified
 from aiogram.utils.markdown import hstrikethrough
 from aiopriman.manager import LockManager
 from aiopriman.storage import StorageData
