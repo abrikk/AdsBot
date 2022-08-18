@@ -16,7 +16,7 @@ from apscheduler.jobstores.base import JobLookupError
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from tgbot.config import Config
-from tgbot.constants import OWNER, ADMIN, USER, BANNED
+from tgbot.constants import OWNER, ADMIN, USER, BANNED, ADMIN_IDS
 from tgbot.filters.inline_user_filter import InlineUserFilter
 from tgbot.filters.manage_filter import ManageUser
 from tgbot.handlers.create_ad.form import when_not, get_user_mention
@@ -135,7 +135,7 @@ async def change_user_role(call: types.CallbackQuery, _widget: Any, manager: Dia
     await db.update_user_role(user_id, role)
     await call.answer("Роль пользователя изменена на: " + role)
     if role == BANNED:
-        support_ids: list[int, str, str | None, str | None] = await db.get_support_team()
+        support_ids: list[int, str, str | None, str | None] = await db.get_support_team(user_ids=ADMIN_IDS)
         support_mentions: str = ", ".join([
             get_user_mention(id, first_name, last_name, username)
             for id, first_name, last_name, username in support_ids

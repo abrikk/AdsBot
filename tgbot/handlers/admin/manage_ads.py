@@ -7,6 +7,7 @@ from apscheduler.jobstores.base import JobLookupError
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from tgbot.config import Config
+from tgbot.constants import ADMIN_IDS
 from tgbot.handlers.create_ad.form import get_user_mention, make_link_to_post
 from tgbot.keyboards.inline import confirm_delete_ad, manage_cb, manage_post, confirm_cb
 from tgbot.models.post_ad import PostAd
@@ -72,7 +73,7 @@ async def delete_ad_confirmation(call: types.CallbackQuery, callback_data: dict,
         except JobLookupError:
             logging.warning("Job not found")
 
-        support_ids: list[int, str, str | None, str | None] = await db_commands.get_support_team()
+        support_ids: list[int, str, str | None, str | None] = await db_commands.get_support_team(user_ids=ADMIN_IDS)
         support_mentions: str = ", ".join([
             get_user_mention(id, first_name, last_name, username)
             for id, first_name, last_name, username in support_ids

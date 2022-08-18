@@ -156,11 +156,16 @@ class DBCommands:
         request = await self.session.execute(sql)
         return request.scalars().all()
 
-    async def get_support_team(self):
+    async def get_support_team(self, user_ids: list[int]):
         sql = select(
             User.user_id, User.first_name,
             User.last_name, User.username
-        ).where(User.role.in_(['owner', 'admin']))
+        ).where(
+            and_(
+                User.role.in_(['owner', 'admin']),
+                User.user_id.in_(user_ids)
+            )
+        )
         request = await self.session.execute(sql)
         return request.all()
 
