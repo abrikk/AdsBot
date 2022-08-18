@@ -46,21 +46,6 @@ async def up_ad(call: types.CallbackQuery, callback_data: dict,
             return
 
         try:
-            if post_ad.related_messages:
-                for message in post_ad.related_messages:
-                    await bot.delete_message(
-                        chat_id=config.chats.main_channel_id,
-                        message_id=message.message_id
-                    )
-            else:
-                await bot.delete_message(
-                    chat_id=config.chats.main_channel_id,
-                    message_id=post_ad.post_id
-                )
-        except MessageToDeleteNotFound:
-            logging.warning("Message to delete not found")
-
-        try:
             scheduler.remove_job(job_id=f"check_{post_id}")
         except JobLookupError:
             logging.warning("Job not found")
