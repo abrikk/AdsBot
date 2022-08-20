@@ -31,8 +31,8 @@ class Ad:
     post_limit: int = field(default=0)
 
     post_link: str = ""
-    updated_at: datetime = field(default=datetime.now(tz=pytz.timezone("Europe/Kiev")))
-    created_at: datetime = field(default=datetime.now(tz=pytz.timezone("Europe/Kiev")))
+    updated_at: datetime = field(default=datetime.now(tz=pytz.timezone(TIMEZONE)))
+    created_at: datetime = field(default=datetime.now(tz=pytz.timezone(TIMEZONE)))
 
     def to_text(self, where: str = None) -> str:
         description: str = self.description or '➖'
@@ -204,7 +204,11 @@ class Ad:
         tag = "#" + headings.get(self.state_class) + self.tag_category + self.tag_name
         return " ".join([heading, category, tag])
 
-    def make_datetime_text(self) -> str:
+    def make_datetime_text(self, current: bool = False) -> str:
+        if current:
+            return f"Дата создания объявления: <code>{datetime.now(tz=pytz.timezone(TIMEZONE)).astimezone(tz=pytz.timezone(TIMEZONE)).strftime('%d.%m.%Y %H:%M:%S')}</code>\n" \
+                   f"Последнее обновление: <code>{datetime.now(tz=pytz.timezone(TIMEZONE)).astimezone(tz=pytz.timezone(TIMEZONE)).strftime('%d.%m.%Y %H:%M:%S')}</code>"
+
         return f"Дата создания объявления: <code>{self.created_at.astimezone(tz=pytz.timezone(TIMEZONE)).strftime('%d.%m.%Y %H:%M:%S')}</code>\n" \
                f"Последнее обновление: <code>{self.updated_at.astimezone(tz=pytz.timezone(TIMEZONE)).strftime('%d.%m.%Y %H:%M:%S')}</code>"
 
