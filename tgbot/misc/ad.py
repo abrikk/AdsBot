@@ -183,7 +183,7 @@ class Ad:
             post_list.insert(2, f"Желаемая цена: {str(self.price) + ' ' + self.currency}")
 
         if where == "admin_group":
-            post_list.append(f"{self.make_datetime_text()}")
+            post_list.append(f"{self.make_datetime_text(current=True)}")
             post_list.insert(0, f"Объявление: {self.post_link}")
 
         return '\n\n'.join(post_list)
