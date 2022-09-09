@@ -71,9 +71,6 @@ async def main():
     register_all_handlers(dp)
     register_all_dialogs(registry)
 
-    # allowed_updates = [AllowedUpdates.MESSAGE, AllowedUpdates.CHOSEN_INLINE_RESULT, AllowedUpdates.CALLBACK_QUERY,
-    #                    AllowedUpdates.INLINE_QUERY, AllowedUpdates.CHAT_MEMBER]
-
     # start
     try:
         await dp.skip_updates()
