@@ -71,13 +71,13 @@ async def main():
     register_all_handlers(dp)
     register_all_dialogs(registry)
 
-    allowed_updates = [AllowedUpdates.MESSAGE, AllowedUpdates.CHOSEN_INLINE_RESULT, AllowedUpdates.CALLBACK_QUERY,
-                       AllowedUpdates.INLINE_QUERY, AllowedUpdates.CHAT_MEMBER]
+    # allowed_updates = [AllowedUpdates.MESSAGE, AllowedUpdates.CHOSEN_INLINE_RESULT, AllowedUpdates.CALLBACK_QUERY,
+    #                    AllowedUpdates.INLINE_QUERY, AllowedUpdates.CHAT_MEMBER]
 
     # start
     try:
         await dp.skip_updates()
-        await dp.start_polling(allowed_updates=allowed_updates)
+        await dp.start_polling(allowed_updates=AllowedUpdates.all())
     finally:
         await dp.storage.close()
         await dp.storage.wait_closed()

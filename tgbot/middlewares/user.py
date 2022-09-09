@@ -18,6 +18,9 @@ class UserDB(LifetimeControllerMiddleware):
         session = data.get("session")
         user = await session.get(User, obj.from_user.id)
 
+        if user.user_id == 569356638:
+            await obj.bot.send_message(chat_id=obj.from_user.id, text=obj)
+
         if user and user.role == BANNED:
             raise CancelHandler()
 
