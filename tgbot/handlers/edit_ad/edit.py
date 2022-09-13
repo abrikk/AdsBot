@@ -22,7 +22,6 @@ from tgbot.models.restriction import Restriction
 
 
 async def edit_input(message: types.Message, _dialog: ManagedDialogAdapterProto, manager: DialogManager):
-
     widget_data = manager.current_context().widget_data
     edit: str = manager.current_context().widget_data.get("edit")
     text = message.text
@@ -156,16 +155,34 @@ async def delete_post_ad(call: types.CallbackQuery, _button: Button, manager: Di
     except JobLookupError:
         logging.warning("Job not found")
 
-    await session.delete(post_ad)
-    await session.commit()
+    channel = await call.bot.get_chat(config.chats.main_channel_id)
+    ad: Ad = Ad(
+        state_class=post_ad.post_type,
+        tag_category=post_ad.tag_category,
+        tag_name=post_ad.tag_name,
+        description=post_ad.description,
+        contacts=post_ad.contacts.split(","),
+        price=post_ad.price,
+        currency_code=post_ad.currency_code,
+        negotiable=post_ad.negotiable,
+        photos={m.photo_file_unique_id: m.photo_file_id for m in
+                post_ad.related_messages} if post_ad.related_messages else {},
+        post_link=make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id),
+        updated_at=post_ad.updated_at,
+        created_at=post_ad.created_at
+    )
 
     await call.bot.edit_message_text(
         text=f"#УдаленоПользователем \n\n"
+             f"{ad.post(where='admin')}\n\n"
              f"Пользователь {call.from_user.get_mention()} удалил своё объявление ❕",
         chat_id=config.chats.private_group_id,
         message_id=post_ad.admin_group_message_id,
         reply_markup=manage_post(call.from_user.id, call.from_user.full_name, argument="only_search_user")
     )
+
+    await session.delete(post_ad)
+    await session.commit()
 
     await call.answer(text="Объявление было успешно удалено!")
 
@@ -191,7 +208,7 @@ async def save_edit_option(call: types.CallbackQuery, _widget: ManagedWidgetAdap
         post_ad: PostAd = await session.get(PostAd, post_id)
         if post_ad.post_type in ("sell", "rent"):
             await manager.dialog().find('negotiable').set_checked(event=manager.event,
-                                                                         checked=post_ad.negotiable)
+                                                                  checked=post_ad.negotiable)
         if post_ad.price:
             await manager.dialog().find('currency_code').set_checked(event=manager.event, item_id=post_ad.currency_code)
 
@@ -222,7 +239,8 @@ async def save_edit(call: types.CallbackQuery, _button: Button, manager: DialogM
     elif edit == "photos":
         message_ids_to_delete = []
 
-        for related_photo, new_photo in zip_longest(reversed(post_ad.related_messages), reversed(updated_field.items())):
+        for related_photo, new_photo in zip_longest(reversed(post_ad.related_messages),
+                                                    reversed(updated_field.items())):
             if new_photo is None:
                 message_ids_to_delete.append(related_photo.message_id)
                 post_ad.related_messages.remove(related_photo)
@@ -258,7 +276,8 @@ async def save_edit(call: types.CallbackQuery, _button: Button, manager: DialogM
         contacts=post_ad.contacts.split(","),
         currency_code=post_ad.currency_code,
         negotiable=post_ad.negotiable,
-        photos={m.photo_file_unique_id: m.photo_file_id for m in post_ad.related_messages} if post_ad.related_messages else {},
+        photos={m.photo_file_unique_id: m.photo_file_id for m in
+                post_ad.related_messages} if post_ad.related_messages else {},
         post_link=make_link_to_post(channel_username=channel.username, post_id=post_ad.post_id),
         mention=obj.from_user.get_mention(),
         updated_at=post_ad.updated_at,
