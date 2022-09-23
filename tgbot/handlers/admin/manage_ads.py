@@ -98,7 +98,7 @@ async def delete_ad_confirmation(call: types.CallbackQuery, callback_data: dict,
 
         await call.message.edit_text(
             text="#УдаленоАдминистратором\n\n" +
-            hstrikethrough(call.message.text.replace("\n\n ⚠️ Вы уверены что хотите удалить это объявление?", "")) +
+            call.message.text.replace("\n\n ⚠️ Вы уверены что хотите удалить это объявление?", "") +
             f"\n\n Объявление было удалено администратором: {call.from_user.get_mention()}‼️",
             reply_markup=manage_post(user_id, argument="only_search_user")
         )
