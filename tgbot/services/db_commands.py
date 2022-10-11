@@ -192,8 +192,15 @@ class DBCommands:
     async def count_users(self, condition: str = "all"):
         options: dict = {
             "all": True,
-            "day": extract("DAY", User.created_at) == datetime.now(tz=pytz.timezone(TIMEZONE)).day,
-            "month": extract("MONTH", User.created_at) == datetime.now(tz=pytz.timezone(TIMEZONE)).month,
+            "day": and_(
+                extract("DAY", User.created_at) == datetime.now(tz=pytz.timezone(TIMEZONE)).day,
+                extract("MONTH", User.created_at) == datetime.now(tz=pytz.timezone(TIMEZONE)).month,
+                extract("YEAR", User.created_at) == datetime.now(tz=pytz.timezone(TIMEZONE)).year
+            ),
+            "month": and_(
+                extract("MONTH", User.created_at) == datetime.now(tz=pytz.timezone(TIMEZONE)).month,
+                extract("YEAR", User.created_at) == datetime.now(tz=pytz.timezone(TIMEZONE)).year
+            ),
             "admin": User.role == "admin",
             "banned": User.role == "banned",
             "restricted": User.restricted_till.is_not(None),
