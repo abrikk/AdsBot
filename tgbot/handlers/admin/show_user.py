@@ -263,8 +263,8 @@ async def restrict_user(call: types.CallbackQuery, _widget: Any, manager: Dialog
     session = manager.data.get("session")
     user: User = await session.get(User, user_id)
 
-    # user.restricted_till = datetime.today() + timedelta(days=int(days))
-    user.restricted_till = datetime.now() + timedelta(minutes=1)
+    user.restricted_till = datetime.today() + timedelta(days=int(days))
+
     await session.commit()
     await call.answer("Пользователь ограничен на: " + days + " дней")
     manager.current_context().widget_data["restrict"] = False
