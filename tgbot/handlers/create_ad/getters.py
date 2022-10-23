@@ -145,7 +145,6 @@ async def get_confirm_text(dialog_manager: DialogManager, **_kwargs):
 
 
 async def on_confirm(call: types.CallbackQuery, _button: Button, manager: DialogManager):
-    await call.answer(text="Объявление было успешно опубликовано в канале!", cache_time=300)
 
     scheduler = call.bot.get("scheduler")
     bot: Bot = call.bot
@@ -183,6 +182,7 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
         )
 
         if is_ad_exist is not None:
+            await call.answer(text="Такое объявление уже существует! ⚠️", cache_time=300)
             return
 
         if len(ad.photos) > 1:
@@ -271,5 +271,6 @@ async def on_confirm(call: types.CallbackQuery, _button: Button, manager: Dialog
 
         post_ad.admin_group_message_id = admin_group.message_id
         await session.commit()
+        await call.answer(text="Объявление было успешно опубликовано в канале!", cache_time=300)
 
         await manager.start(Main.main, mode=StartMode.RESET_STACK)
